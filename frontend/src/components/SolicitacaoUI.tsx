@@ -109,14 +109,20 @@ export function RequestsDashboard({
         }
         actions={
           canCreateSolicitacao ? (
-            <Button type="button" variant="primary" icon={<Plus size={18} />} onClick={onCreateClick}>
+            <Button
+              type="button"
+              variant="primary"
+              icon={<Plus size={18} />}
+              className="w-full sm:w-auto"
+              onClick={onCreateClick}
+            >
               Nova solicitação
             </Button>
           ) : null
         }
       />
 
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <SummaryCard label="Total" value={totalSolicitacoes} icon={<ClipboardList />} />
         <SummaryCard label="Pendentes" value={statusCounts.ABERTA + statusCounts.EM_ANALISE} icon={<FileText />} />
         <SummaryCard
@@ -128,7 +134,7 @@ export function RequestsDashboard({
       </div>
 
       <section className="overflow-hidden rounded-lg border border-[#d8e1d5] bg-white shadow-[0_12px_32px_rgba(28,45,36,0.06)]">
-        <div className="grid gap-3 border-b border-[#d8e1d5] bg-white p-4 lg:grid-cols-[minmax(260px,1fr)_220px]">
+        <div className="grid gap-3 border-b border-[#d8e1d5] bg-white p-3 sm:p-4 lg:grid-cols-[minmax(260px,1fr)_220px]">
           <label className="grid gap-1.5">
             <span className="text-xs font-extrabold uppercase text-[#647169]">Buscar</span>
             <div className="relative">
@@ -358,25 +364,48 @@ function SolicitacaoRow({
       role="button"
       tabIndex={0}
       className={[
-        'grid w-full cursor-pointer gap-3 px-4 py-4 text-left transition hover:bg-[#f6f8f5] focus:bg-[#f6f8f5] focus:outline-none focus:ring-3 focus:ring-blue-600/20 xl:grid-cols-[110px_minmax(220px,1fr)_minmax(160px,0.8fr)_minmax(150px,0.7fr)_160px_96px] xl:items-center',
+        'grid w-full cursor-pointer gap-3 px-3 py-4 text-left transition hover:bg-[#f6f8f5] focus:bg-[#f6f8f5] focus:outline-none focus:ring-3 focus:ring-blue-600/20 sm:px-4 xl:grid-cols-[110px_minmax(220px,1fr)_minmax(160px,0.8fr)_minmax(150px,0.7fr)_160px_96px] xl:items-center',
         selected ? 'bg-[#eef3ec]' : 'bg-white',
       ].join(' ')}
       onClick={() => onOpenDetails(solicitacao)}
       onKeyDown={handleKeyDown}
     >
-      <span className="text-sm font-extrabold text-[#14532d]">#{solicitacao.id_solicitacao}</span>
+      <span className="grid gap-1">
+        <small className="text-[11px] font-extrabold uppercase tracking-[0.06em] text-[#647169] xl:hidden">
+          Protocolo
+        </small>
+        <strong className="text-sm font-extrabold text-[#14532d]">#{solicitacao.id_solicitacao}</strong>
+      </span>
       <span className="min-w-0">
-        <strong className="block truncate text-sm text-[#17231d]">{buildEndereco(solicitacao)}</strong>
+        <small className="block text-[11px] font-extrabold uppercase tracking-[0.06em] text-[#647169] xl:hidden">
+          Endereço
+        </small>
+        <strong className="block break-words text-sm text-[#17231d] xl:truncate">{buildEndereco(solicitacao)}</strong>
         <small className="mt-1 block text-xs font-bold text-[#647169]">
           {formatDate(solicitacao.data_solicitacao)}
         </small>
       </span>
-      <span className="truncate text-sm font-semibold text-[#394c42]">{solicitacao.nome_solicitante}</span>
-      <span className="truncate text-sm font-semibold text-[#647169]">
-        {solicitacao.nome_fiscal_responsavel || '-'}
+      <span className="grid min-w-0 gap-1">
+        <small className="text-[11px] font-extrabold uppercase tracking-[0.06em] text-[#647169] xl:hidden">
+          Solicitante
+        </small>
+        <span className="truncate text-sm font-semibold text-[#394c42]">{solicitacao.nome_solicitante}</span>
       </span>
-      <StatusBadge status={solicitacao.status} />
-      <span className="flex justify-end">
+      <span className="grid min-w-0 gap-1">
+        <small className="text-[11px] font-extrabold uppercase tracking-[0.06em] text-[#647169] xl:hidden">
+          Fiscal
+        </small>
+        <span className="truncate text-sm font-semibold text-[#647169]">
+          {solicitacao.nome_fiscal_responsavel || '-'}
+        </span>
+      </span>
+      <span className="grid gap-1">
+        <small className="text-[11px] font-extrabold uppercase tracking-[0.06em] text-[#647169] xl:hidden">
+          Status
+        </small>
+        <StatusBadge status={solicitacao.status} />
+      </span>
+      <span className="flex justify-start xl:justify-end">
         <IconButton
           label="Ver detalhes"
           icon={<Eye size={16} />}

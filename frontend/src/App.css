@@ -371,7 +371,7 @@ textarea {
 }
 
 .modal-panel {
-  width: min(760px, 100%);
+  width: min(960px, 100%);
   max-height: calc(100vh - 40px);
   display: grid;
   gap: 16px;
@@ -421,6 +421,11 @@ textarea {
 }
 
 @media (max-width: 640px) {
+  .page-surface {
+    gap: 12px;
+    padding: 12px 12px 28px;
+  }
+
   .login-shell {
     padding: 14px;
   }
@@ -432,6 +437,39 @@ textarea {
   .ui-card-header {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .feedback {
+    margin: 10px 12px 0;
+  }
+
+  .modal-backdrop {
+    align-items: stretch;
+    justify-items: stretch;
+    padding: 0;
+  }
+
+  .modal-panel {
+    width: 100%;
+    min-height: 100dvh;
+    max-height: 100dvh;
+    border-radius: 0;
+    padding: 14px 12px;
+  }
+
+  .modal-header {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    align-items: flex-start;
+    margin: -14px -12px 0;
+    padding: 14px 12px 10px;
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-surface);
+  }
+
+  .modal-header h2 {
+    font-size: 20px;
   }
 
   .modal-footer {

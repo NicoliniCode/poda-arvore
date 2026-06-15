@@ -69,7 +69,7 @@ export function IconButton({
       aria-label={label}
       title={label}
       className={[
-        'inline-grid h-9 w-9 place-items-center rounded-md border text-sm transition focus:outline-none focus:ring-3 focus:ring-blue-600/30 disabled:cursor-not-allowed disabled:opacity-55',
+        'inline-grid h-10 w-10 place-items-center rounded-md border text-sm transition focus:outline-none focus:ring-3 focus:ring-blue-600/30 disabled:cursor-not-allowed disabled:opacity-55',
         iconButtonTones[tone],
         className,
       ].join(' ').trim()}
@@ -94,18 +94,18 @@ export function PageHeader({
   actions?: ReactNode
 }) {
   return (
-    <section className="grid gap-4 rounded-lg border border-[#d8e1d5] bg-white p-4 shadow-[0_12px_32px_rgba(28,45,36,0.06)] lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+    <section className="grid gap-4 rounded-lg border border-[#d8e1d5] bg-white p-3 shadow-[0_12px_32px_rgba(28,45,36,0.06)] sm:p-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
       <div>
         {eyebrow ? (
           <span className="text-xs font-extrabold uppercase tracking-[0.08em] text-[#647169]">
             {eyebrow}
           </span>
         ) : null}
-        <h1 className="mt-1 text-2xl font-extrabold text-[#17231d]">{title}</h1>
+        <h1 className="mt-1 text-xl font-extrabold text-[#17231d] sm:text-2xl">{title}</h1>
         {description ? <p className="mt-1 text-sm font-semibold text-[#647169]">{description}</p> : null}
       </div>
       {meta || actions ? (
-        <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+        <div className="grid gap-2 sm:flex sm:flex-wrap sm:items-center lg:justify-end">
           {meta}
           {actions}
         </div>
@@ -143,7 +143,7 @@ export function FileUpload({
 
   return (
     <label
-      className="grid cursor-pointer gap-3 rounded-lg border border-dashed border-[#8cab96] bg-[#f6f8f5] p-4 transition hover:border-[#166534] hover:bg-[#eef3ec]"
+      className="grid cursor-pointer gap-3 rounded-lg border border-dashed border-[#8cab96] bg-[#f6f8f5] p-3 transition hover:border-[#166534] hover:bg-[#eef3ec] sm:p-4"
       htmlFor={fieldId}
     >
       <div className="flex items-start gap-3">

@@ -47,8 +47,8 @@ export function ProfileAccountView({ user, onBack, onSubmit }: ProfileViewProps)
             <Field label="Telefone" name="telefone" />
             <Field label="CPF" name="cpf" />
           </div>
-          <div className="flex justify-end">
-            <Button type="submit" variant="primary" icon={<Save size={18} />}>
+          <div className="flex justify-stretch sm:justify-end">
+            <Button type="submit" variant="primary" icon={<Save size={18} />} className="w-full sm:w-auto">
               Salvar alterações
             </Button>
           </div>
@@ -85,8 +85,8 @@ export function SecurityView({ onBack, onSubmit }: SecurityViewProps) {
           <Field label="Senha atual" name="senhaAtual" type="password" autoComplete="current-password" />
           <Field label="Nova senha" name="novaSenha" type="password" autoComplete="new-password" />
           <Field label="Confirmar nova senha" name="confirmarSenha" type="password" autoComplete="new-password" />
-          <div className="flex justify-end">
-            <Button type="submit" variant="primary" icon={<KeyRound size={18} />}>
+          <div className="flex justify-stretch sm:justify-end">
+            <Button type="submit" variant="primary" icon={<KeyRound size={18} />} className="w-full sm:w-auto">
               Alterar senha
             </Button>
           </div>
@@ -108,15 +108,15 @@ function ProfilePageHeader({
   onBack: () => void
 }) {
   return (
-    <div className="flex flex-col gap-3 rounded-lg border border-[#d8e1d5] bg-white p-4 shadow-[0_12px_32px_rgba(28,45,36,0.06)] sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-3 rounded-lg border border-[#d8e1d5] bg-white p-3 shadow-[0_12px_32px_rgba(28,45,36,0.06)] sm:flex-row sm:items-center sm:justify-between sm:p-4">
       <div>
         <span className="text-xs font-extrabold uppercase tracking-[0.08em] text-[#647169]">
           {eyebrow}
         </span>
-        <h1 className="mt-1 text-2xl font-extrabold text-[#17231d]">{title}</h1>
+        <h1 className="mt-1 text-xl font-extrabold text-[#17231d] sm:text-2xl">{title}</h1>
         <p className="mt-1 text-sm font-semibold text-[#647169]">{description}</p>
       </div>
-      <Button type="button" variant="secondary" icon={<ArrowLeft size={18} />} onClick={onBack}>
+      <Button type="button" variant="secondary" icon={<ArrowLeft size={18} />} className="w-full sm:w-auto" onClick={onBack}>
         Voltar ao painel
       </Button>
     </div>

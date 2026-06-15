@@ -66,7 +66,7 @@ export function UsersDashboard({
 }: UserDashboardProps) {
   return (
     <section className="grid gap-4">
-      <div className="grid gap-4 rounded-lg border border-[#d8e1d5] bg-white p-4 shadow-[0_12px_32px_rgba(28,45,36,0.06)]">
+      <div className="grid gap-4 rounded-lg border border-[#d8e1d5] bg-white p-3 shadow-[0_12px_32px_rgba(28,45,36,0.06)] sm:p-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <span className="text-xs font-extrabold uppercase tracking-[0.08em] text-[#647169]">
@@ -77,11 +77,17 @@ export function UsersDashboard({
               Gerencie os acessos ao sistema.
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-md border border-[#d8e1d5] bg-[#f6f8f5] px-3 py-2 text-sm font-extrabold text-[#394c42]">
+          <div className="grid gap-2 sm:flex sm:flex-wrap sm:items-center">
+            <span className="rounded-md border border-[#d8e1d5] bg-[#f6f8f5] px-3 py-2 text-center text-sm font-extrabold text-[#394c42]">
               {totalUsuarios} cadastrados
             </span>
-            <Button type="button" variant="primary" icon={<Plus size={18} />} onClick={onCreateClick}>
+            <Button
+              type="button"
+              variant="primary"
+              icon={<Plus size={18} />}
+              className="w-full sm:w-auto"
+              onClick={onCreateClick}
+            >
               Novo usuário
             </Button>
           </div>
@@ -296,31 +302,49 @@ function UserRow({
     <div
       role="button"
       tabIndex={0}
-      className="grid cursor-pointer gap-3 px-4 py-4 transition hover:bg-[#f6f8f5] focus:bg-[#f6f8f5] focus:outline-none focus:ring-3 focus:ring-blue-600/20 lg:grid-cols-[1.2fr_1.35fr_0.8fr_0.7fr_0.9fr_120px] lg:items-center"
+      className="grid cursor-pointer gap-3 px-3 py-4 transition hover:bg-[#f6f8f5] focus:bg-[#f6f8f5] focus:outline-none focus:ring-3 focus:ring-blue-600/20 sm:px-4 lg:grid-cols-[1.2fr_1.35fr_0.8fr_0.7fr_0.9fr_120px] lg:items-center"
       onClick={() => onEdit(usuario)}
       onKeyDown={handleKeyDown}
     >
       <div className="min-w-0">
+        <small className="block text-[11px] font-extrabold uppercase tracking-[0.06em] text-[#647169] lg:hidden">
+          Nome
+        </small>
         <strong className="block truncate text-sm text-[#17231d]">{usuario.nome}</strong>
         <span className="mt-1 inline-flex items-center gap-1 text-xs font-bold text-[#647169] lg:hidden">
           <ShieldCheck size={14} aria-hidden="true" />
           {formatPerfil(usuario.perfil)}
         </span>
       </div>
-      <span className="min-w-0 truncate text-sm font-semibold text-[#394c42]">{usuario.email}</span>
-      <span className="hidden text-sm font-bold text-[#394c42] lg:inline">{formatPerfil(usuario.perfil)}</span>
-      <span
-        className={[
-          'w-fit rounded-full border px-2.5 py-1 text-xs font-extrabold',
-          usuario.ativo === 'S'
-            ? 'border-[#bbd7c4] bg-[#eefbf2] text-[#166534]'
-            : 'border-[#f1c7c7] bg-[#fef2f2] text-[#991b1b]',
-        ].join(' ')}
-      >
-        {usuario.ativo === 'S' ? 'Ativo' : 'Inativo'}
+      <span className="grid min-w-0 gap-1">
+        <small className="text-[11px] font-extrabold uppercase tracking-[0.06em] text-[#647169] lg:hidden">
+          E-mail
+        </small>
+        <span className="truncate text-sm font-semibold text-[#394c42]">{usuario.email}</span>
       </span>
-      <span className="text-sm font-semibold text-[#647169]">{formatDate(usuario.ultimo_login)}</span>
-      <div className="flex justify-end gap-2" onClick={(event) => event.stopPropagation()}>
+      <span className="hidden text-sm font-bold text-[#394c42] lg:inline">{formatPerfil(usuario.perfil)}</span>
+      <span className="grid gap-1">
+        <small className="text-[11px] font-extrabold uppercase tracking-[0.06em] text-[#647169] lg:hidden">
+          Status
+        </small>
+        <span
+          className={[
+            'w-fit rounded-full border px-2.5 py-1 text-xs font-extrabold',
+            usuario.ativo === 'S'
+              ? 'border-[#bbd7c4] bg-[#eefbf2] text-[#166534]'
+              : 'border-[#f1c7c7] bg-[#fef2f2] text-[#991b1b]',
+          ].join(' ')}
+        >
+          {usuario.ativo === 'S' ? 'Ativo' : 'Inativo'}
+        </span>
+      </span>
+      <span className="grid gap-1">
+        <small className="text-[11px] font-extrabold uppercase tracking-[0.06em] text-[#647169] lg:hidden">
+          Último acesso
+        </small>
+        <span className="text-sm font-semibold text-[#647169]">{formatDate(usuario.ultimo_login)}</span>
+      </span>
+      <div className="flex justify-start gap-2 lg:justify-end" onClick={(event) => event.stopPropagation()}>
         <IconButton label="Visualizar usuário" icon={<Eye size={16} />} onClick={() => onEdit(usuario)} />
         <IconButton label="Editar usuário" icon={<Pencil size={16} />} onClick={() => onEdit(usuario)} />
         <IconButton

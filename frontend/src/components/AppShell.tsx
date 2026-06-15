@@ -105,18 +105,18 @@ function Sidebar({
   ]
 
   return (
-    <aside className="border-b border-[#d8e1d5] bg-white lg:border-b-0 lg:border-r">
-      <div className="flex min-h-[72px] items-center gap-3 border-b border-[#d8e1d5] px-5">
-        <span className="grid h-10 w-10 place-items-center rounded-lg bg-[#dcfce7] text-[#14532d]">
-          <Leaf size={22} aria-hidden="true" />
+    <aside className="sticky top-0 z-20 border-b border-[#d8e1d5] bg-white lg:static lg:border-b-0 lg:border-r">
+      <div className="flex min-h-14 items-center gap-3 border-b border-[#d8e1d5] px-3 lg:min-h-[72px] lg:px-5">
+        <span className="grid h-9 w-9 place-items-center rounded-lg bg-[#dcfce7] text-[#14532d] lg:h-10 lg:w-10">
+          <Leaf size={20} aria-hidden="true" />
         </span>
         <div>
-          <strong className="block text-[18px] leading-tight text-[#102117]">Autoriza Poda</strong>
-          <span className="block text-[13px] font-semibold text-[#647169]">Sistema municipal</span>
+          <strong className="block text-[16px] leading-tight text-[#102117] lg:text-[18px]">Autoriza Poda</strong>
+          <span className="block text-[12px] font-semibold text-[#647169] lg:text-[13px]">Sistema municipal</span>
         </div>
       </div>
 
-      <nav className="grid gap-4 p-3" aria-label="Navegação principal">
+      <nav className="flex gap-2 overflow-x-auto p-2 lg:grid lg:gap-4 lg:overflow-visible lg:p-3" aria-label="Navegação principal">
         <NavigationGroup title="Painel">
           <NavButton
             item={{
@@ -157,11 +157,11 @@ function Sidebar({
 
 function NavigationGroup({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="grid gap-2">
-      <span className="px-2 text-[11px] font-extrabold uppercase tracking-[0.08em] text-[#647169]">
+    <div className="contents lg:grid lg:gap-2">
+      <span className="hidden px-2 text-[11px] font-extrabold uppercase tracking-[0.08em] text-[#647169] lg:block">
         {title}
       </span>
-      <div className="flex gap-2 overflow-x-auto lg:grid lg:overflow-visible">{children}</div>
+      <div className="contents lg:grid lg:gap-2">{children}</div>
     </div>
   )
 }
@@ -206,16 +206,23 @@ function Topbar({
   onLogout: () => void
 }) {
   return (
-    <header className="flex min-h-[72px] items-center justify-between gap-4 border-b border-[#d8e1d5] bg-white px-5 py-3">
+    <header className="flex min-h-14 items-center justify-between gap-3 border-b border-[#d8e1d5] bg-white px-3 py-2 lg:min-h-[72px] lg:px-5 lg:py-3">
       <div className="min-w-0">
-        <span className="block text-xs font-extrabold uppercase tracking-[0.08em] text-[#647169]">
+        <span className="block text-[11px] font-extrabold uppercase tracking-[0.08em] text-[#647169] lg:text-xs">
           Painel operacional
         </span>
         <strong className="block truncate text-base text-[#17231d]">Autoriza Poda</strong>
       </div>
-      <div className="flex items-center gap-3">
-        <Button type="button" variant="secondary" icon={<RefreshCw size={18} />} onClick={onRefresh} loading={loading}>
-          Atualizar
+      <div className="flex shrink-0 items-center gap-2 lg:gap-3">
+        <Button
+          type="button"
+          variant="secondary"
+          icon={<RefreshCw size={18} aria-hidden="true" />}
+          aria-label="Atualizar"
+          onClick={onRefresh}
+          loading={loading}
+        >
+          <span className="hidden sm:inline">Atualizar</span>
         </Button>
         <UserMenuDropdown user={user} onNavigate={onNavigate} onLogout={onLogout} />
       </div>
@@ -242,7 +249,7 @@ function UserMenuDropdown({
     <div className="relative">
       <button
         type="button"
-        className="flex min-h-10 items-center gap-2 rounded-md border border-[#cbd7cf] bg-white px-3 text-left text-sm font-extrabold text-[#17231d]"
+        className="flex min-h-10 items-center gap-2 rounded-md border border-[#cbd7cf] bg-white px-2 text-left text-sm font-extrabold text-[#17231d] sm:px-3"
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
       >
@@ -252,7 +259,7 @@ function UserMenuDropdown({
         <span className="hidden max-w-[180px] truncate sm:inline">{user.nome}</span>
       </button>
       {open ? (
-        <div className="absolute right-0 z-10 mt-2 w-64 rounded-md border border-[#d8e1d5] bg-white p-3 shadow-[0_16px_36px_rgba(28,45,36,0.12)]">
+        <div className="absolute right-0 z-30 mt-2 w-[min(18rem,calc(100vw-1rem))] rounded-md border border-[#d8e1d5] bg-white p-3 shadow-[0_16px_36px_rgba(28,45,36,0.12)]">
           <div className="border-b border-[#e3ebe1] pb-3">
             <strong className="block truncate text-[#17231d]">{user.nome}</strong>
             <span className="block truncate text-sm text-[#647169]">{user.email}</span>
