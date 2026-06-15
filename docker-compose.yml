@@ -1,0 +1,98 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: poda-arvores-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: poda_arvores
+      MYSQL_USER: poda_user
+      MYSQL_PASSWORD: poda_pass
+    ports:
+      - "3308:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+      - ./database/inserts-teste.sql:/docker-entrypoint-initdb.d/03-inserts-teste.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -proot --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - poda-arvores-network
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: poda-arvores-phpmyadmin
+    restart: unless-stopped
+    ports:
+      - "8082:80"
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      MYSQL_ROOT_PASSWORD: root
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - poda-arvores-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: poda-arvores-backend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - ./uploads:/app/uploads
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: poda_user
+      DB_PASSWORD: poda_pass
+      DB_NAME: poda_arvores
+      JWT_SECRET: chave_secreta_dev
+      CORS_ORIGIN: http://localhost:5173
+      UPLOAD_DIR: /app/uploads
+      MAX_FILE_SIZE_MB: 10
+    networks:
+      - poda-arvores-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: poda-arvores-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    environment:
+      VITE_API_URL: http://localhost:3000
+      CHOKIDAR_USEPOLLING: true
+    networks:
+      - poda-arvores-network
+
+volumes:
+  mysql_data:
+
+networks:
+  poda-arvores-network:
+    driver: bridge
+    name: poda-arvores-network
