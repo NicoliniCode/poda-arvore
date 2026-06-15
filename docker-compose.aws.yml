@@ -1,5 +1,6 @@
 services:
   frontend:
+    restart: unless-stopped
     environment:
       VITE_API_URL: https://api.integrumsoft.com.br
     networks:
@@ -7,6 +8,7 @@ services:
       - rede-proxy
 
   backend:
+    restart: unless-stopped
     environment:
       CORS_ORIGIN: https://integrumsoft.com.br
       DB_HOST: mysql
