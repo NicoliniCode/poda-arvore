@@ -1,0 +1,26 @@
+services:
+  frontend:
+    environment:
+      VITE_API_URL: https://api.integrumsoft.com.br
+    networks:
+      - poda-arvores-network
+      - rede-proxy
+
+  backend:
+    environment:
+      CORS_ORIGIN: https://integrumsoft.com.br
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: poda_user
+      DB_PASSWORD: poda_pass
+      DB_NAME: poda_arvore
+    networks:
+      - poda-arvores-network
+      - rede-proxy
+
+networks:
+  poda-arvores-network:
+    driver: bridge
+
+  rede-proxy:
+    external: true
