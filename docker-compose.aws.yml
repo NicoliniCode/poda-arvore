@@ -15,7 +15,7 @@ services:
       DB_PORT: 3306
       DB_USER: poda_user
       DB_PASSWORD: poda_pass
-      DB_NAME: poda_arvore
+      DB_NAME: poda_arvores
     networks:
       - poda-arvores-network
       - rede-proxy
