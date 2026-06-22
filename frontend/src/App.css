@@ -317,9 +317,17 @@ textarea {
   background: var(--color-surface);
   color: var(--color-text);
   font-family: inherit;
-  font-size: inherit;
+  font-size: 1rem; /* ≥16px — evita zoom automático no iOS */
   font-weight: normal;
   min-height: 40px;
+}
+
+@media (min-width: 640px) {
+  input,
+  select,
+  textarea {
+    font-size: inherit;
+  }
 }
 
 textarea {
@@ -381,6 +389,10 @@ textarea {
   border-radius: 8px;
   background: var(--color-surface);
   box-shadow: var(--shadow-panel);
+}
+
+.modal-panel-sm {
+  width: min(560px, 100%);
 }
 
 .modal-header {

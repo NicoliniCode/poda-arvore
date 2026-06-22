@@ -1,3 +1,4 @@
+SET NAMES utf8mb4;
 -- ============================================================
 -- SCRIPT COMPLETO - SISTEMA DE SOLICITAÇÃO DE PODA DE ÁRVORE
 -- Banco de dados: poda_arvores

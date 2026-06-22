@@ -1,4 +1,4 @@
-import { useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react'
+import { useEffect, useRef, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react'
 import { ChevronDown, Paperclip, UploadCloud, X } from 'lucide-react'
 import type { StatusSolicitacao } from '../types/domain'
 import { statusInfo } from '../constants/status'
@@ -70,7 +70,7 @@ export function IconButton({
       aria-label={label}
       title={label}
       className={cn(
-        'inline-grid h-8 w-8 place-items-center rounded-md border text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
+        'inline-grid h-11 w-11 place-items-center rounded-md border text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 sm:h-8 sm:w-8',
         iconButtonTones[tone],
         className,
       )}
@@ -119,7 +119,7 @@ export function Input({ className = '', ...props }: InputHTMLAttributes<HTMLInpu
   return (
     <input
       className={cn(
-        'min-h-10 w-full rounded-md border border-[#cbd7cf] bg-white px-2.5 py-2 font-normal text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/30',
+        'min-h-10 w-full rounded-md border border-[#cbd7cf] bg-white px-2.5 py-2 font-normal text-base text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/30 sm:text-sm',
         className,
       )}
       {...props}
@@ -133,59 +133,96 @@ export function FileUpload({
   name,
   id,
   multiple = true,
-  onChange,
+  onChange: _onChange,
   ...props
 }: Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> & {
   label?: string
   helper?: string
 }) {
+  const mainInputRef = useRef<HTMLInputElement>(null)
   const [files, setFiles] = useState<File[]>([])
   const fieldId = id || name
 
+  const addFiles = (incoming: FileList | null) => {
+    if (!incoming || incoming.length === 0) return
+    setFiles((prev) => {
+      const existing = new Set(prev.map((f) => `${f.name}-${f.size}`))
+      const fresh = Array.from(incoming).filter((f) => !existing.has(`${f.name}-${f.size}`))
+      return [...prev, ...fresh]
+    })
+  }
+
+  const removeFile = (idx: number) => {
+    setFiles((prev) => prev.filter((_, i) => i !== idx))
+  }
+
+  useEffect(() => {
+    const input = mainInputRef.current
+    if (!input) return
+    try {
+      const dt = new DataTransfer()
+      files.forEach((f) => dt.items.add(f))
+      input.files = dt.files
+    } catch {
+      // DataTransfer não suportado — fallback silencioso
+    }
+  }, [files])
+
   return (
-    <label
-      className="grid cursor-pointer gap-3 rounded-lg border border-dashed border-[#8cab96] bg-[#f6f8f5] p-3 transition hover:border-[#166534] hover:bg-[#eef3ec] sm:p-4"
-      htmlFor={fieldId}
-    >
-      <div className="flex items-start gap-3">
-        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-[#dcfce7] text-[#14532d]">
-          <UploadCloud size={20} aria-hidden="true" />
-        </span>
-        <div className="min-w-0">
-          <strong className="block text-sm text-[#17231d]">{label}</strong>
-          <span className="block text-sm font-semibold text-[#647169]">{helper}</span>
+    <div className="grid gap-2">
+      {/* Drop zone — clique para escolher qualquer arquivo */}
+      <label
+        className="grid cursor-pointer gap-3 rounded-lg border border-dashed border-[#8cab96] bg-[#f6f8f5] p-3 transition hover:border-[#166534] hover:bg-[#eef3ec] sm:p-4"
+        htmlFor={fieldId}
+      >
+        <div className="flex items-start gap-3">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-[#dcfce7] text-[#14532d]">
+            <UploadCloud size={20} aria-hidden="true" />
+          </span>
+          <div className="min-w-0">
+            <strong className="block text-sm text-[#17231d]">{label}</strong>
+            <span className="block text-sm font-semibold text-[#647169]">{helper}</span>
+          </div>
         </div>
-      </div>
-      <input
-        id={fieldId}
-        name={name}
-        type="file"
-        multiple={multiple}
-        className="sr-only"
-        onChange={(event) => {
-          setFiles(Array.from(event.target.files || []))
-          onChange?.(event)
-        }}
-        {...props}
-      />
+        <input
+          ref={mainInputRef}
+          id={fieldId}
+          name={name}
+          type="file"
+          multiple={multiple}
+          className="sr-only"
+          onChange={(e) => addFiles(e.target.files)}
+          {...props}
+        />
+      </label>
+
+      {/* Preview acumulado com remoção */}
       <div className="flex flex-wrap gap-2">
         {files.length ? (
-          files.map((file) => (
+          files.map((file, idx) => (
             <span
-              key={`${file.name}-${file.lastModified}`}
-              className="inline-flex min-h-8 max-w-full items-center gap-2 rounded-md border border-[#cbd7cf] bg-white px-2.5 text-xs font-extrabold text-[#394c42]"
+              key={`${file.name}-${file.size}-${idx}`}
+              className="inline-flex min-h-8 max-w-45 items-center gap-1.5 rounded-md border border-[#cbd7cf] bg-white px-2.5 text-xs font-extrabold text-[#394c42]"
             >
-              <Paperclip size={14} aria-hidden="true" />
+              <Paperclip size={12} aria-hidden="true" />
               <span className="truncate">{file.name}</span>
+              <button
+                type="button"
+                aria-label={`Remover ${file.name}`}
+                className="ml-auto shrink-0 text-[#647169] transition hover:text-[#991b1b]"
+                onClick={() => removeFile(idx)}
+              >
+                <X size={12} />
+              </button>
             </span>
           ))
         ) : (
           <span className="inline-flex min-h-8 items-center rounded-md border border-[#cbd7cf] bg-white px-2.5 text-xs font-extrabold text-[#647169]">
-            Clique para selecionar arquivos
+            Nenhum arquivo selecionado
           </span>
         )}
       </div>
-    </label>
+    </div>
   )
 }
 
@@ -333,6 +370,7 @@ export function Modal({
   description,
   children,
   footer,
+  size,
   onClose,
 }: {
   open: boolean
@@ -340,6 +378,7 @@ export function Modal({
   description?: string
   children?: ReactNode
   footer?: ReactNode
+  size?: 'sm'
   onClose: () => void
 }) {
   if (!open) {
@@ -349,7 +388,7 @@ export function Modal({
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={onClose}>
       <section
-        className="modal-panel"
+        className={size === 'sm' ? 'modal-panel modal-panel-sm' : 'modal-panel'}
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"

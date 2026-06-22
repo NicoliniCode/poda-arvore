@@ -44,6 +44,22 @@ const usuarioCreateSchema = z.object({
   telefone: z.preprocess(emptyToNull, z.string().trim().max(20).nullable().optional())
 });
 
+type SenhaHashRow = RowDataPacket & { senha_hash: string };
+type PerfilTargetRow = RowDataPacket & { perfil: string };
+type AdminCountRow = RowDataPacket & { cnt: number };
+
+const alterarSenhaSchema = z.object({
+  senhaAtual: z.string().min(1),
+  novaSenha: z.string().min(6).max(80)
+});
+
+const meuPerfilSchema = z.object({
+  nome: z.string().trim().min(3).max(120),
+  email: z.string().trim().email().max(120),
+  cpf: z.preprocess(emptyToNull, z.string().trim().max(14).nullable().optional()),
+  telefone: z.preprocess(emptyToNull, z.string().trim().max(20).nullable().optional())
+});
+
 const usuarioUpdateSchema = z.object({
   nome: z.string().trim().min(3).max(120),
   email: z.string().trim().email().max(120),
@@ -158,11 +174,98 @@ router.post(
 );
 
 router.put(
+  '/usuarios/me/senha',
+  asyncHandler(async (req, res) => {
+    const user = req.user!;
+    const data = alterarSenhaSchema.parse(req.body);
+
+    const [rows] = await pool.execute<SenhaHashRow[]>(
+      `SELECT senha_hash FROM usuario WHERE id_usuario = ? AND ativo = 'S' LIMIT 1`,
+      [user.id]
+    );
+
+    const row = rows[0];
+    if (!row) {
+      throw new AppError(404, 'Usuario nao encontrado.');
+    }
+
+    const senhaOk = await bcrypt.compare(data.senhaAtual, row.senha_hash);
+    if (!senhaOk) {
+      throw new AppError(400, 'Senha atual incorreta.');
+    }
+
+    const novaSenhaHash = await bcrypt.hash(data.novaSenha, 10);
+    await pool.execute<ResultSetHeader>(
+      `UPDATE usuario SET senha_hash = ? WHERE id_usuario = ?`,
+      [novaSenhaHash, user.id]
+    );
+
+    res.json({ message: 'Senha alterada com sucesso.' });
+  })
+);
+
+router.put(
+  '/usuarios/me',
+  asyncHandler(async (req, res) => {
+    const user = req.user!;
+    const data = meuPerfilSchema.parse(req.body);
+
+    const [result] = await pool.execute<ResultSetHeader>(
+      `UPDATE usuario
+          SET nome = ?,
+              email = ?,
+              cpf = ?,
+              telefone = ?
+        WHERE id_usuario = ?`,
+      [data.nome, data.email, data.cpf ?? null, data.telefone ?? null, user.id]
+    );
+
+    if (result.affectedRows === 0) {
+      throw new AppError(404, 'Usuario nao encontrado.');
+    }
+
+    res.json({ message: 'Perfil atualizado.' });
+  })
+);
+
+router.put(
   '/usuarios/:id',
   requirePermissions('USUARIO_GERENCIAR'),
   asyncHandler(async (req, res) => {
     const idUsuario = getIdParam(req.params.id);
     const data = usuarioUpdateSchema.parse(req.body);
+
+    // Impedir que o próprio usuário logado se inative
+    if (idUsuario === req.user!.id && data.ativo === 'N') {
+      throw new AppError(400, 'Não é possível inativar a própria conta.');
+    }
+
+    // Impedir inativação do único administrador ativo
+    if (data.ativo === 'N') {
+      const [targetRows] = await pool.execute<PerfilTargetRow[]>(
+        `SELECT p.nome AS perfil
+           FROM usuario u
+           JOIN perfil p ON p.id_perfil = u.id_perfil
+          WHERE u.id_usuario = ?`,
+        [idUsuario]
+      );
+
+      if (targetRows[0]?.perfil === 'ADMINISTRADOR') {
+        const [countRows] = await pool.execute<AdminCountRow[]>(
+          `SELECT COUNT(*) AS cnt
+             FROM usuario u
+             JOIN perfil p ON p.id_perfil = u.id_perfil
+            WHERE p.nome = 'ADMINISTRADOR'
+              AND u.ativo = 'S'`,
+          []
+        );
+
+        if ((countRows[0]?.cnt ?? 0) <= 1) {
+          throw new AppError(400, 'Não é possível inativar o único administrador ativo.');
+        }
+      }
+    }
+
     const params: SqlParam[] = [
       data.idPerfil,
       data.nome,

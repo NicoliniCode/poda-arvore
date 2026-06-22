@@ -116,7 +116,8 @@ Deve:
 | Ver proprias solicitacoes | Sim | Se for responsavel | Sim |
 | Ver todas as solicitacoes | Nao | Nao | Sim |
 | Ver solicitacoes encaminhadas | Nao | Apenas as suas | Sim |
-| Editar solicitacao | Quando permitido | Apenas vistoria/parecer | Sim |
+| Editar solicitacao | Apenas em `ABERTA` | Apenas vistoria/parecer | Status nao-final |
+| Cancelar solicitacao | Propria em `ABERTA` | Nao | `ABERTA` ou `ENCAMINHADA_FISCAL` |
 | Encaminhar para fiscal | Nao | Nao | Sim |
 | Registrar vistoria | Nao | Sim, se responsavel | Opcional |
 | Aprovar/reprovar tecnicamente | Nao | Sim, se responsavel | Opcional |

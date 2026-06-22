@@ -1,9 +1,10 @@
-import { useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react'
+import { useEffect, useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react'
 import {
   CalendarClock,
   CheckCircle2,
   ChevronDown,
   ClipboardList,
+  Download,
   Eye,
   FileText,
   MapPin,
@@ -13,9 +14,11 @@ import {
   Search,
   Send,
   ShieldCheck,
+  Trash2,
   User,
   XCircle,
 } from 'lucide-react'
+import { toast } from 'sonner'
 import { statusInfo } from '../constants/status'
 import type { Solicitacao, SolicitacaoDetails, StatusSolicitacao, Usuario } from '../types/domain'
 import { buildEndereco, formatDate, getAttachmentUrl } from '../utils/formatters'
@@ -46,11 +49,13 @@ type RequestsDashboardProps = {
   selectedId: number | null
   canCreateSolicitacao: boolean
   canEditSolicitacao?: (solicitacao: Solicitacao) => boolean
+  canCancelSolicitacao?: (solicitacao: Solicitacao) => boolean
   onSearchChange: (value: string) => void
   onStatusFilterChange: (value: SolicitacaoStatusFilter) => void
   onCreateClick: () => void
   onOpenDetails: (solicitacao: Solicitacao) => void
   onEditSolicitacao?: (solicitacao: Solicitacao) => void
+  onCancelSolicitacao?: (solicitacao: Solicitacao) => void
 }
 
 type SolicitacaoDetailProps = {
@@ -97,11 +102,13 @@ export function RequestsDashboard({
   selectedId,
   canCreateSolicitacao,
   canEditSolicitacao,
+  canCancelSolicitacao,
   onSearchChange,
   onStatusFilterChange,
   onCreateClick,
   onOpenDetails,
   onEditSolicitacao,
+  onCancelSolicitacao,
 }: RequestsDashboardProps) {
   return (
     <section className="grid gap-4">
@@ -195,8 +202,10 @@ export function RequestsDashboard({
               solicitacao={solicitacao}
               selected={selectedId === solicitacao.id_solicitacao}
               canEdit={canEditSolicitacao?.(solicitacao) ?? false}
+              canCancel={canCancelSolicitacao?.(solicitacao) ?? false}
               onOpenDetails={onOpenDetails}
               onEdit={onEditSolicitacao}
+              onCancel={onCancelSolicitacao}
             />
           ))}
         </div>
@@ -359,14 +368,18 @@ function SolicitacaoRow({
   solicitacao,
   selected,
   canEdit,
+  canCancel,
   onOpenDetails,
   onEdit,
+  onCancel,
 }: {
   solicitacao: Solicitacao
   selected: boolean
   canEdit: boolean
+  canCancel: boolean
   onOpenDetails: (solicitacao: Solicitacao) => void
   onEdit?: (solicitacao: Solicitacao) => void
+  onCancel?: (solicitacao: Solicitacao) => void
 }) {
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Enter' || event.key === ' ') {
@@ -440,8 +453,121 @@ function SolicitacaoRow({
             onOpenDetails(solicitacao)
           }}
         />
+        {canCancel && onCancel ? (
+          <IconButton
+            label="Cancelar solicitação"
+            icon={<Trash2 size={16} />}
+            tone="danger"
+            onClick={(event) => {
+              event.stopPropagation()
+              onCancel(solicitacao)
+            }}
+          />
+        ) : null}
       </span>
     </div>
+  )
+}
+
+function AnexoViewerModal({
+  anexo,
+  onClose,
+}: {
+  anexo: Anexo | null
+  onClose: () => void
+}) {
+  const [imgError, setImgError] = useState(false)
+  const [downloading, setDownloading] = useState(false)
+
+  useEffect(() => {
+    setImgError(false)
+  }, [anexo])
+
+  const url = anexo ? getAttachmentUrl(anexo.caminho_arquivo) : ''
+  const ext = (anexo?.nome_arquivo.split('.').pop() ?? '').toLowerCase()
+  const isImage = ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext)
+  const isPdf = ext === 'pdf'
+
+  const handleDownload = async () => {
+    if (!anexo) return
+    setDownloading(true)
+    try {
+      const response = await fetch(url)
+      if (!response.ok) throw new Error('Falha ao baixar')
+      const blob = await response.blob()
+      const objectUrl = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = objectUrl
+      a.download = anexo.nome_arquivo
+      a.click()
+      URL.revokeObjectURL(objectUrl)
+    } catch {
+      toast.error('Não foi possível baixar o arquivo.')
+    } finally {
+      setDownloading(false)
+    }
+  }
+
+  return (
+    <Modal
+      open={Boolean(anexo)}
+      title={anexo?.nome_arquivo ?? 'Visualizar arquivo'}
+      onClose={onClose}
+    >
+      <div className="grid gap-4">
+        {imgError ? (
+          <div className="grid place-items-center gap-3 rounded-lg border border-[#d8e1d5] bg-[#f6f8f5] py-12 text-center">
+            <FileText size={40} className="text-[#647169]" aria-hidden />
+            <div>
+              <strong className="block text-[#17231d]">Arquivo não encontrado</strong>
+              <span className="block text-sm font-semibold text-[#647169]">
+                O arquivo pode ter sido removido do servidor.
+              </span>
+            </div>
+          </div>
+        ) : isImage ? (
+          <img
+            src={url}
+            alt={anexo?.nome_arquivo ?? ''}
+            className="max-w-full rounded-lg"
+            onError={() => setImgError(true)}
+          />
+        ) : isPdf ? (
+          <iframe
+            src={url}
+            title={anexo?.nome_arquivo ?? 'PDF'}
+            className="h-[65vh] min-h-64 w-full rounded-lg border border-[#d8e1d5]"
+          />
+        ) : (
+          <div className="grid place-items-center gap-3 rounded-lg border border-[#d8e1d5] bg-[#f6f8f5] py-12 text-center">
+            <FileText size={40} className="text-[#14532d]" aria-hidden />
+            <div>
+              <strong className="block text-[#17231d]">{anexo?.nome_arquivo}</strong>
+              <span className="block text-sm font-semibold text-[#647169]">
+                Clique em Baixar para salvar o arquivo.
+              </span>
+            </div>
+          </div>
+        )}
+
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="secondary" onClick={onClose}>
+            Fechar
+          </Button>
+          {!imgError ? (
+            <Button
+              type="button"
+              variant="primary"
+              icon={<Download size={16} />}
+              loading={downloading}
+              onClick={() => void handleDownload()}
+            >
+              Baixar
+            </Button>
+          ) : null}
+        </div>
+      </div>
+    </Modal>
   )
 }
 
@@ -460,7 +586,23 @@ function SolicitacaoDetail({
 }: SolicitacaoDetailProps) {
   const [selectedFiscalId, setSelectedFiscalId] = useState<number | null>(null)
   const [fiscalModalOpen, setFiscalModalOpen] = useState(false)
+  const [viewingAttachment, setViewingAttachment] = useState<Anexo | null>(null)
   const selectedFiscal = fiscais.find((f) => f.id_usuario === selectedFiscalId) ?? null
+
+  const openAttachment = async (anexo: Anexo) => {
+    const url = getAttachmentUrl(anexo.caminho_arquivo)
+    try {
+      const response = await fetch(url, { method: 'HEAD' })
+      if (!response.ok) {
+        toast.error('Arquivo não encontrado no servidor.')
+        return
+      }
+    } catch {
+      toast.error('Falha ao acessar o arquivo. Verifique a conexão.')
+      return
+    }
+    setViewingAttachment(anexo)
+  }
 
   return (
     <div className="grid gap-4">
@@ -494,16 +636,15 @@ function SolicitacaoDetail({
         <Card title="Anexos" eyebrow="Arquivos enviados">
           <div className="flex flex-wrap gap-2">
             {details.anexos.map((anexo) => (
-              <a
+              <button
                 key={anexo.id_anexo}
-                className="inline-flex min-h-9 items-center gap-2 rounded-md border border-[#cbd7cf] bg-white px-2.5 text-sm font-extrabold text-[#14532d] no-underline transition hover:bg-[#f6f8f5]"
-                href={getAttachmentUrl(anexo.caminho_arquivo)}
-                target="_blank"
-                rel="noreferrer"
+                type="button"
+                className="inline-flex min-h-11 items-center gap-2 rounded-md border border-[#cbd7cf] bg-white px-2.5 text-sm font-extrabold text-[#14532d] transition hover:bg-[#f6f8f5] sm:min-h-9"
+                onClick={() => void openAttachment(anexo)}
               >
                 <FileText size={16} aria-hidden="true" />
                 {anexo.nome_arquivo}
-              </a>
+              </button>
             ))}
           </div>
         </Card>
@@ -642,6 +783,11 @@ function SolicitacaoDetail({
           </div>
         </Card>
       ) : null}
+
+      <AnexoViewerModal
+        anexo={viewingAttachment}
+        onClose={() => setViewingAttachment(null)}
+      />
     </div>
   )
 }

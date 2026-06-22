@@ -3,6 +3,7 @@ import type { FormEvent } from 'react'
 import { AxiosError } from 'axios'
 import { toast } from 'sonner'
 import {
+  KeyRound,
   Leaf,
   Mail,
   UserPlus,
@@ -20,6 +21,7 @@ import {
 import {
   CreateUserModal,
   EditUserModal,
+  ViewUserModal,
   UsersDashboard,
   type UsuarioPerfilFilter,
   type UsuarioStatusFilter,
@@ -93,6 +95,7 @@ function App() {
   const [creatingSolicitacao, setCreatingSolicitacao] = useState(false)
   const [creatingUser, setCreatingUser] = useState(false)
   const [editingUser, setEditingUser] = useState<Usuario | null>(null)
+  const [viewingUser, setViewingUser] = useState<Usuario | null>(null)
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null)
 
   const canCreateSolicitacao = user?.permissoes.includes('SOLICITACAO_CRIAR') ?? false
@@ -166,8 +169,16 @@ function App() {
   const canEditSolicitacao = useCallback((solicitacao: Solicitacao): boolean => {
     if (finalStatuses.includes(solicitacao.status)) return false
     if (user?.perfil === 'ADMINISTRADOR') return true
+    if (user?.perfil === 'SOLICITANTE') return solicitacao.status === 'ABERTA'
+    return false
+  }, [user])
+
+  const canCancelSolicitacao = useCallback((solicitacao: Solicitacao): boolean => {
+    if (user?.perfil === 'ADMINISTRADOR') {
+      return ['ABERTA', 'ENCAMINHADA_FISCAL'].includes(solicitacao.status)
+    }
     if (user?.perfil === 'SOLICITANTE') {
-      return ['ABERTA', 'EM_ANALISE', 'ENCAMINHADA_FISCAL'].includes(solicitacao.status)
+      return solicitacao.status === 'ABERTA' && solicitacao.id_usuario_solicitante === user.id
     }
     return false
   }, [user])
@@ -316,7 +327,6 @@ function App() {
       setStoredToken(data.token)
       setUser(data.user)
       setView('solicitacoes')
-      toast.success(`Login realizado como ${data.user.nome}.`)
     } catch (loginError) {
       toast.error(getErrorMessage(loginError))
     } finally {
@@ -324,14 +334,51 @@ function App() {
     }
   }
 
-  const handleRegisterSolicitante = (event: FormEvent<HTMLFormElement>) => {
+  const handleRegisterSolicitante = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    toast.warning('A tela de cadastro está pronta, mas o endpoint público de cadastro de solicitante ainda precisa ser implementado no backend.')
+    setLoading(true)
+    const form = event.currentTarget
+    const formData = new FormData(form)
+    try {
+      await api.post('/api/auth/registrar', {
+        nome: String(formData.get('nome') || ''),
+        email: String(formData.get('email') || ''),
+        senha: String(formData.get('senha') || ''),
+        cpf: String(formData.get('cpf') || ''),
+        telefone: String(formData.get('telefone') || ''),
+      })
+      toast.success('Cadastro realizado. Faça login para continuar.')
+      setAuthMode('login')
+    } catch (registerError) {
+      toast.error(getErrorMessage(registerError))
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleForgotPassword = (event: FormEvent<HTMLFormElement>) => {
+  const handleForgotPassword = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    toast.warning('A tela de recuperação está pronta, mas os endpoints de recuperação de senha ainda precisam ser implementados no backend.')
+    const formData = new FormData(event.currentTarget)
+    const novaSenha = String(formData.get('novaSenha') || '')
+    const confirmarSenha = String(formData.get('confirmarSenha') || '')
+    if (novaSenha !== confirmarSenha) {
+      toast.error('As senhas não conferem.')
+      return
+    }
+    setLoading(true)
+    try {
+      await api.post('/api/auth/redefinir-senha', {
+        email: String(formData.get('email') || ''),
+        cpf: String(formData.get('cpf') || ''),
+        novaSenha,
+      })
+      toast.success('Senha redefinida. Faça login com a nova senha.')
+      setAuthMode('login')
+    } catch (forgotError) {
+      toast.error(getErrorMessage(forgotError))
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleLogout = () => {
@@ -579,14 +626,67 @@ function App() {
     }
   }
 
-  const handleProfileUpdate = (event: FormEvent<HTMLFormElement>) => {
+  const handleProfileUpdate = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    toast.warning('A tela de perfil está pronta, mas o endpoint de edição do próprio perfil ainda precisa ser implementado no backend.')
+    setLoading(true)
+    const formData = new FormData(event.currentTarget)
+    try {
+      await api.put('/api/usuarios/me', {
+        nome: String(formData.get('nome') || ''),
+        email: String(formData.get('email') || ''),
+        cpf: String(formData.get('cpf') || ''),
+        telefone: String(formData.get('telefone') || ''),
+      })
+      await loadMe()
+      toast.success('Perfil atualizado.')
+      setProfileOpen(false)
+    } catch (profileError) {
+      toast.error(getErrorMessage(profileError))
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handlePasswordUpdate = (event: FormEvent<HTMLFormElement>) => {
+  const handlePasswordUpdate = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    toast.warning('A tela de alteração de senha está pronta, mas o endpoint de senha ainda precisa ser implementado no backend.')
+    const formData = new FormData(event.currentTarget)
+    const novaSenha = String(formData.get('novaSenha') || '')
+    const confirmarSenha = String(formData.get('confirmarSenha') || '')
+    if (novaSenha !== confirmarSenha) {
+      toast.error('As senhas não conferem.')
+      return
+    }
+    setLoading(true)
+    try {
+      await api.put('/api/usuarios/me/senha', {
+        senhaAtual: String(formData.get('senhaAtual') || ''),
+        novaSenha,
+      })
+      toast.success('Senha alterada com sucesso.')
+      setSecurityOpen(false)
+    } catch (passwordError) {
+      toast.error(getErrorMessage(passwordError))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const requestCancelSolicitacao = (solicitacao: Solicitacao) => {
+    setConfirmAction({
+      title: 'Cancelar solicitação',
+      description: `A solicitação #${solicitacao.id_solicitacao} será cancelada permanentemente e não poderá retornar ao fluxo.`,
+      label: 'Cancelar solicitação',
+      variant: 'danger',
+      run: async () => {
+        await api.post(`/api/solicitacoes/${solicitacao.id_solicitacao}/cancelar`)
+        if (selectedId === solicitacao.id_solicitacao) {
+          setSelectedId(null)
+          setDetails(null)
+        }
+        await loadSolicitacoes()
+        toast.success('Solicitação cancelada.')
+      },
+    })
   }
 
   const confirmCurrentAction = async () => {
@@ -635,7 +735,7 @@ function App() {
                 ? 'Entre com email e senha. O perfil será identificado automaticamente pelo sistema.'
                 : authMode === 'register'
                   ? 'Informe seus dados para solicitar acesso como solicitante.'
-                  : 'Informe seu email para iniciar a recuperação de senha.'}
+                  : 'Informe email e CPF cadastrados para verificar sua identidade e criar uma nova senha.'}
             </p>
           </div>
 
@@ -679,12 +779,12 @@ function App() {
 
           {authMode === 'register' ? (
             <form className="auth-form" onSubmit={handleRegisterSolicitante}>
-              <Field label="Nome completo" name="nome" required minLength={3} />
-              <Field label="Email" name="email" type="email" required />
-              <Field label="CPF" name="cpf" />
-              <Field label="Telefone" name="telefone" />
-              <Field label="Senha" name="senha" type="password" required minLength={6} />
-              <Button type="submit" variant="primary" icon={<UserPlus size={18} />}>
+              <Field label="Nome completo" name="nome" required minLength={3} autoComplete="name" />
+              <Field label="Email" name="email" type="email" autoComplete="email" required />
+              <Field label="CPF" name="cpf" inputMode="numeric" />
+              <Field label="Telefone" name="telefone" type="tel" autoComplete="tel" />
+              <Field label="Senha" name="senha" type="password" required minLength={6} autoComplete="new-password" />
+              <Button type="submit" variant="primary" icon={<UserPlus size={18} />} loading={loading}>
                 Cadastrar-me
               </Button>
               <button type="button" className="link-button auth-back" onClick={() => setAuthMode('login')}>
@@ -695,9 +795,12 @@ function App() {
 
           {authMode === 'forgot' ? (
             <form className="auth-form" onSubmit={handleForgotPassword}>
-              <Field label="Email" name="email" type="email" defaultValue={rememberedEmail} required />
-              <Button type="submit" variant="primary" icon={<Mail size={18} />}>
-                Enviar instruções
+              <Field label="Email" name="email" type="email" autoComplete="email" defaultValue={rememberedEmail} required />
+              <Field label="CPF" name="cpf" required />
+              <Field label="Nova senha" name="novaSenha" type="password" autoComplete="new-password" required minLength={6} />
+              <Field label="Confirmar nova senha" name="confirmarSenha" type="password" autoComplete="new-password" required minLength={6} />
+              <Button type="submit" variant="primary" icon={<KeyRound size={18} />} loading={loading}>
+                Redefinir senha
               </Button>
               <button type="button" className="link-button auth-back" onClick={() => setAuthMode('login')}>
                 Voltar para login
@@ -746,11 +849,13 @@ function App() {
             selectedId={selectedId}
             canCreateSolicitacao={canCreateSolicitacao}
             canEditSolicitacao={canEditSolicitacao}
+            canCancelSolicitacao={canCancelSolicitacao}
             onSearchChange={setSolicitacaoSearch}
             onStatusFilterChange={setStatusFilter}
             onCreateClick={() => setCreatingSolicitacao(true)}
             onOpenDetails={(solicitacao) => setSelectedId(solicitacao.id_solicitacao)}
             onEditSolicitacao={setEditingSolicitacao}
+            onCancelSolicitacao={requestCancelSolicitacao}
           />
         </section>
       ) : null}
@@ -765,10 +870,12 @@ function App() {
             search={usuarioSearch}
             perfilFilter={usuarioPerfilFilter}
             statusFilter={usuarioStatusFilter}
+            currentUserId={user.id}
             onSearchChange={setUsuarioSearch}
             onPerfilFilterChange={setUsuarioPerfilFilter}
             onStatusFilterChange={setUsuarioStatusFilter}
             onCreateClick={() => setCreatingUser(true)}
+            onView={setViewingUser}
             onEdit={setEditingUser}
             onToggleStatus={requestToggleUser}
           />
@@ -810,6 +917,10 @@ function App() {
         onClose={() => setEditingSolicitacao(null)}
         onSubmit={handleEditSolicitacao}
       />
+      <ViewUserModal
+        usuario={viewingUser}
+        onClose={() => setViewingUser(null)}
+      />
       <CreateUserModal
         open={creatingUser}
         perfis={perfis}
@@ -821,6 +932,7 @@ function App() {
         usuario={editingUser}
         perfis={perfis}
         loading={loading}
+        currentUserId={user.id}
         onClose={() => setEditingUser(null)}
         onSubmit={handleEditUser}
         onToggleStatus={(usuario) => {
@@ -832,6 +944,7 @@ function App() {
         open={Boolean(confirmAction)}
         title={confirmAction?.title || ''}
         description={confirmAction?.description}
+        size="sm"
         onClose={() => setConfirmAction(null)}
         footer={
           <>
@@ -852,7 +965,7 @@ function App() {
     </AppShell>
 
     <Dialog open={profileOpen} onOpenChange={(open) => { if (!open) setProfileOpen(false) }}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="max-h-[calc(100dvh-32px)] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Meu perfil</DialogTitle>
           <DialogDescription>Dados básicos da conta autenticada.</DialogDescription>
@@ -862,7 +975,7 @@ function App() {
     </Dialog>
 
     <Dialog open={securityOpen} onOpenChange={(open) => { if (!open) setSecurityOpen(false) }}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="max-h-[calc(100dvh-32px)] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Segurança</DialogTitle>
           <DialogDescription>Altere sua senha de acesso ao sistema.</DialogDescription>

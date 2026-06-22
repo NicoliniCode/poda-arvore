@@ -29,7 +29,7 @@ export function Topbar({
   onNavigateSecurity,
 }: TopbarProps) {
   return (
-    <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60 pt-[env(safe-area-inset-top)]">
       {/* Hambúrguer — visível apenas em mobile */}
       <button
         type="button"

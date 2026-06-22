@@ -2,7 +2,7 @@ import { Router } from 'express';
 import type { PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import { z } from 'zod';
 import { pool, withTransaction } from '../../config/db';
-import { authenticate, requirePermissions } from '../../middleware/auth';
+import { authenticate, requirePermissions, requireProfile } from '../../middleware/auth';
 import type { AuthUser } from '../../types/auth';
 import { asyncHandler, AppError } from '../../utils/http';
 import {
@@ -81,6 +81,7 @@ type SolicitacaoLockRow = RowDataPacket & {
   id_solicitacao: number;
   status: StatusSolicitacao;
   id_fiscal_responsavel: number | null;
+  id_usuario_solicitante: number;
 };
 
 type UsuarioPerfilRow = RowDataPacket & {
@@ -489,6 +490,147 @@ router.post(
 
     const details = await fetchSolicitacaoDetails(idSolicitacao, req.user!);
     res.json(details);
+  })
+);
+
+router.put(
+  '/:id',
+  asyncHandler(async (req, res) => {
+    const idSolicitacao = getIdParam(req.params.id);
+    const user = req.user!;
+    const data = createSolicitacaoSchema.parse(req.body);
+
+    await withTransaction(async (connection) => {
+      const [rows] = await connection.execute<SolicitacaoLockRow[]>(
+        `SELECT id_solicitacao, status, id_usuario_solicitante, id_fiscal_responsavel
+           FROM solicitacao_poda
+          WHERE id_solicitacao = ?
+          FOR UPDATE`,
+        [idSolicitacao]
+      );
+
+      const solicitacao = rows[0];
+
+      if (!solicitacao) {
+        throw new AppError(404, 'Solicitacao nao encontrada.');
+      }
+
+      if (finalStatuses.includes(solicitacao.status)) {
+        throw new AppError(409, 'Solicitacao encerrada nao pode ser editada.');
+      }
+
+      if (user.perfil === 'FISCAL') {
+        throw new AppError(403, 'Fiscal nao pode editar dados da solicitacao.');
+      }
+
+      if (user.perfil === 'SOLICITANTE') {
+        if (solicitacao.id_usuario_solicitante !== user.id) {
+          throw new AppError(403, 'Sem permissao para editar esta solicitacao.');
+        }
+        if (solicitacao.status !== 'ABERTA') {
+          throw new AppError(409, 'Solicitacao so pode ser editada quando estiver aberta.');
+        }
+      }
+
+      await connection.execute<ResultSetHeader>(
+        `UPDATE solicitacao_poda
+            SET endereco = ?,
+                numero = ?,
+                bairro = ?,
+                cidade = ?,
+                uf = ?,
+                ponto_referencia = ?,
+                motivo = ?,
+                observacao = ?
+          WHERE id_solicitacao = ?`,
+        [
+          data.endereco,
+          data.numero ?? null,
+          data.bairro ?? null,
+          data.cidade,
+          data.uf.toUpperCase(),
+          data.pontoReferencia ?? null,
+          data.motivo,
+          data.observacao ?? null,
+          idSolicitacao
+        ]
+      );
+
+      if (user.perfil === 'ADMINISTRADOR') {
+        await insertHistorico(connection, {
+          idSolicitacao,
+          idUsuarioResponsavel: user.id,
+          status: solicitacao.status,
+          observacao: 'Administrador editou dados da solicitacao.'
+        });
+      }
+    });
+
+    const details = await fetchSolicitacaoDetails(idSolicitacao, user);
+    res.json(details);
+  })
+);
+
+router.post(
+  '/:id/cancelar',
+  asyncHandler(async (req, res) => {
+    const idSolicitacao = getIdParam(req.params.id);
+    const user = req.user!;
+
+    if (user.perfil === 'FISCAL') {
+      throw new AppError(403, 'Fiscal nao pode cancelar solicitacoes.');
+    }
+
+    await withTransaction(async (connection) => {
+      const [rows] = await connection.execute<SolicitacaoLockRow[]>(
+        `SELECT id_solicitacao, status, id_usuario_solicitante, id_fiscal_responsavel
+           FROM solicitacao_poda
+          WHERE id_solicitacao = ?
+          FOR UPDATE`,
+        [idSolicitacao]
+      );
+
+      const solicitacao = rows[0];
+
+      if (!solicitacao) {
+        throw new AppError(404, 'Solicitacao nao encontrada.');
+      }
+
+      if (user.perfil === 'SOLICITANTE') {
+        if (solicitacao.id_usuario_solicitante !== user.id) {
+          throw new AppError(403, 'Sem permissao para cancelar esta solicitacao.');
+        }
+        if (solicitacao.status !== 'ABERTA') {
+          throw new AppError(409, 'Solicitacao so pode ser cancelada quando estiver aberta.');
+        }
+      }
+
+      if (user.perfil === 'ADMINISTRADOR') {
+        if (!(['ABERTA', 'ENCAMINHADA_FISCAL'] as StatusSolicitacao[]).includes(solicitacao.status)) {
+          throw new AppError(409, 'Solicitacao nao pode ser cancelada neste status.');
+        }
+      }
+
+      await connection.execute<ResultSetHeader>(
+        `UPDATE solicitacao_poda
+            SET status = 'CANCELADA'
+          WHERE id_solicitacao = ?`,
+        [idSolicitacao]
+      );
+
+      const observacao = user.perfil === 'ADMINISTRADOR'
+        ? 'Solicitacao cancelada pelo administrador.'
+        : 'Solicitacao cancelada pelo solicitante.';
+
+      await insertHistorico(connection, {
+        idSolicitacao,
+        idUsuarioResponsavel: user.id,
+        status: 'CANCELADA',
+        observacao
+      });
+    });
+
+    res.json({ message: 'Solicitacao cancelada.' });
   })
 );
 

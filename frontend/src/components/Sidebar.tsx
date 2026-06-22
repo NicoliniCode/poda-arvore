@@ -36,7 +36,7 @@ export function SidebarContent({ items, activeKey, onNavigate }: SidebarContentP
       </div>
 
       {/* Navegação principal */}
-      <nav aria-label="Navegação principal" className="flex-1 space-y-0.5 p-3">
+      <nav aria-label="Navegação principal" className="flex-1 space-y-0.5 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
         {items.map((item) => (
           <button
             key={item.key}

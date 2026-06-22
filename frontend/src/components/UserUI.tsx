@@ -26,12 +26,19 @@ type UserDashboardProps = {
   search: string
   perfilFilter: UsuarioPerfilFilter
   statusFilter: UsuarioStatusFilter
+  currentUserId?: number
   onSearchChange: (value: string) => void
   onPerfilFilterChange: (value: UsuarioPerfilFilter) => void
   onStatusFilterChange: (value: UsuarioStatusFilter) => void
   onCreateClick: () => void
+  onView: (usuario: Usuario) => void
   onEdit: (usuario: Usuario) => void
   onToggleStatus: (usuario: Usuario) => void
+}
+
+type ViewUserModalProps = {
+  usuario: Usuario | null
+  onClose: () => void
 }
 
 type CreateUserModalProps = {
@@ -46,6 +53,7 @@ type EditUserModalProps = {
   usuario: Usuario | null
   perfis: Perfil[]
   loading: boolean
+  currentUserId?: number
   onClose: () => void
   onSubmit: (event: FormEvent<HTMLFormElement>) => void
   onToggleStatus: (usuario: Usuario) => void
@@ -59,10 +67,12 @@ export function UsersDashboard({
   search,
   perfilFilter,
   statusFilter,
+  currentUserId,
   onSearchChange,
   onPerfilFilterChange,
   onStatusFilterChange,
   onCreateClick,
+  onView,
   onEdit,
   onToggleStatus,
 }: UserDashboardProps) {
@@ -166,6 +176,8 @@ export function UsersDashboard({
               key={usuario.id_usuario}
               usuario={usuario}
               loading={loading}
+              currentUserId={currentUserId}
+              onView={onView}
               onEdit={onEdit}
               onToggleStatus={onToggleStatus}
             />
@@ -202,11 +214,11 @@ export function CreateUserModal({
     >
       <form className="modal-form" onSubmit={onSubmit}>
         <div className="form-grid">
-          <Field label="Nome" name="nome" required minLength={3} />
-          <Field label="Email" name="email" type="email" required />
-          <Field label="Senha" name="senha" type="password" required minLength={6} />
-          <Field label="CPF" name="cpf" />
-          <Field label="Telefone" name="telefone" />
+          <Field label="Nome" name="nome" required minLength={3} autoComplete="name" />
+          <Field label="Email" name="email" type="email" autoComplete="email" required />
+          <Field label="Senha" name="senha" type="password" required minLength={6} autoComplete="new-password" />
+          <Field label="CPF" name="cpf" inputMode="numeric" />
+          <Field label="Telefone" name="telefone" type="tel" autoComplete="tel" />
           <SelectField label="Perfil" name="idPerfil" required defaultValue="">
             <option value="" disabled>
               Selecione
@@ -231,14 +243,57 @@ export function CreateUserModal({
   )
 }
 
+export function ViewUserModal({ usuario, onClose }: ViewUserModalProps) {
+  return (
+    <Modal
+      open={Boolean(usuario)}
+      title="Dados do usuário"
+      description={usuario ? formatPerfil(usuario.perfil) : ''}
+      size="sm"
+      onClose={onClose}
+    >
+      {usuario ? (
+        <div className="grid gap-4">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <ViewField label="Nome" value={usuario.nome} />
+            <ViewField label="E-mail" value={usuario.email} />
+            <ViewField label="CPF" value={usuario.cpf || '-'} />
+            <ViewField label="Telefone" value={usuario.telefone || '-'} />
+            <ViewField label="Perfil" value={formatPerfil(usuario.perfil)} />
+            <ViewField label="Status" value={usuario.ativo === 'S' ? 'Ativo' : 'Inativo'} />
+            <ViewField label="Cadastro" value={formatDate(usuario.data_cadastro)} />
+            <ViewField label="Último acesso" value={formatDate(usuario.ultimo_login)} />
+          </div>
+          <div className="flex justify-end">
+            <Button type="button" variant="secondary" onClick={onClose}>
+              Fechar
+            </Button>
+          </div>
+        </div>
+      ) : null}
+    </Modal>
+  )
+}
+
+function ViewField({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-[#d8e1d5] bg-[#f6f8f5] p-3">
+      <small className="block text-xs font-extrabold uppercase tracking-[0.06em] text-[#647169]">{label}</small>
+      <strong className="mt-0.5 block text-sm text-[#17231d]">{value}</strong>
+    </div>
+  )
+}
+
 export function EditUserModal({
   usuario,
   perfis,
   loading,
+  currentUserId,
   onClose,
   onSubmit,
   onToggleStatus,
 }: EditUserModalProps) {
+  const isSelf = usuario !== null && usuario.id_usuario === currentUserId
   return (
     <Modal
       open={Boolean(usuario)}
@@ -249,10 +304,10 @@ export function EditUserModal({
       {usuario ? (
         <form className="modal-form" onSubmit={onSubmit}>
           <div className="form-grid">
-            <Field label="Nome" name="nome" defaultValue={usuario.nome} required />
-            <Field label="Email" name="email" type="email" defaultValue={usuario.email} required />
-            <Field label="CPF" name="cpf" defaultValue={usuario.cpf || ''} />
-            <Field label="Telefone" name="telefone" defaultValue={usuario.telefone || ''} />
+            <Field label="Nome" name="nome" defaultValue={usuario.nome} required autoComplete="name" />
+            <Field label="Email" name="email" type="email" defaultValue={usuario.email} required autoComplete="email" />
+            <Field label="CPF" name="cpf" defaultValue={usuario.cpf || ''} inputMode="numeric" />
+            <Field label="Telefone" name="telefone" defaultValue={usuario.telefone || ''} type="tel" autoComplete="tel" />
             <SelectField label="Perfil" name="idPerfil" defaultValue={usuario.id_perfil} required>
               {perfis.map((perfil) => (
                 <option key={perfil.id_perfil} value={perfil.id_perfil}>
@@ -270,14 +325,16 @@ export function EditUserModal({
             <Button type="button" variant="secondary" onClick={onClose}>
               Cancelar
             </Button>
-            <Button
-              type="button"
-              variant={usuario.ativo === 'S' ? 'danger' : 'secondary'}
-              onClick={() => onToggleStatus(usuario)}
-              disabled={loading}
-            >
-              {usuario.ativo === 'S' ? 'Inativar usuário' : 'Ativar usuário'}
-            </Button>
+            {!isSelf ? (
+              <Button
+                type="button"
+                variant={usuario.ativo === 'S' ? 'danger' : 'secondary'}
+                onClick={() => onToggleStatus(usuario)}
+                disabled={loading}
+              >
+                {usuario.ativo === 'S' ? 'Inativar usuário' : 'Ativar usuário'}
+              </Button>
+            ) : null}
             <Button type="submit" variant="primary" icon={<Save size={18} />} loading={loading}>
               Salvar
             </Button>
@@ -291,14 +348,19 @@ export function EditUserModal({
 function UserRow({
   usuario,
   loading,
+  currentUserId,
+  onView,
   onEdit,
   onToggleStatus,
 }: {
   usuario: Usuario
   loading: boolean
+  currentUserId?: number
+  onView: (usuario: Usuario) => void
   onEdit: (usuario: Usuario) => void
   onToggleStatus: (usuario: Usuario) => void
 }) {
+  const isSelf = usuario.id_usuario === currentUserId
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault()
@@ -353,15 +415,17 @@ function UserRow({
         <span className="text-sm font-semibold text-[#647169]">{formatDate(usuario.ultimo_login)}</span>
       </span>
       <div className="flex justify-start gap-2 lg:justify-end" onClick={(event) => event.stopPropagation()}>
-        <IconButton label="Visualizar usuário" icon={<Eye size={16} />} onClick={() => onEdit(usuario)} />
+        <IconButton label="Visualizar usuário" icon={<Eye size={16} />} onClick={() => onView(usuario)} />
         <IconButton label="Editar usuário" icon={<Pencil size={16} />} onClick={() => onEdit(usuario)} />
-        <IconButton
-          label={usuario.ativo === 'S' ? 'Inativar usuário' : 'Ativar usuário'}
-          icon={usuario.ativo === 'S' ? <UserX size={16} /> : <UserCheck size={16} />}
-          tone={usuario.ativo === 'S' ? 'danger' : 'success'}
-          disabled={loading}
-          onClick={() => onToggleStatus(usuario)}
-        />
+        {!isSelf ? (
+          <IconButton
+            label={usuario.ativo === 'S' ? 'Inativar usuário' : 'Ativar usuário'}
+            icon={usuario.ativo === 'S' ? <UserX size={16} /> : <UserCheck size={16} />}
+            tone={usuario.ativo === 'S' ? 'danger' : 'success'}
+            disabled={loading}
+            onClick={() => onToggleStatus(usuario)}
+          />
+        ) : null}
       </div>
     </div>
   )

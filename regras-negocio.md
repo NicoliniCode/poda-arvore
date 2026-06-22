@@ -88,16 +88,26 @@ O administrador deve:
 
 Edicao pelo solicitante:
 
-- Permitida quando a solicitacao estiver `ABERTA`, `ENCAMINHADA`.
-- Pode ser permitida em `EM_ANALISE` se a regra operacional exigir complementacao.
-- Nao deve ser permitida quando estiver `ENCAMINHADA_FISCAL`, `EM_VISTORIA`, `APROVADA`, `REPROVADA` ou `CANCELADA`, exceto por acao administrativa.
+- Permitida somente quando a solicitacao estiver `ABERTA`.
+- Nao permitida em nenhum outro status.
 
 Edicao pelo administrador:
-- Deve registrar historico quando alterar informacao relevante.
+- Permitida em qualquer status nao-final (`ABERTA`, `EM_ANALISE`, `ENCAMINHADA_FISCAL`, `EM_VISTORIA`).
+- Toda edicao pelo administrador gera registro em `solicitacao_status_historico`.
 
 Edicao pelo fiscal:
-- Restrita ao registro de vistoria, parecer tecnico e resultado.
-- Nao deve permitir troca de solicitante ou alteracao de dados administrativos.
+- Restrita ao registro de vistoria, parecer tecnico e resultado via rota propria.
+- Nao pode editar dados principais da solicitacao (`PUT /api/solicitacoes/:id` retorna 403).
+
+## Regras de Cancelamento
+
+- Cancelamento via `POST /api/solicitacoes/:id/cancelar`.
+- `ADMINISTRADOR`: pode cancelar nos status `ABERTA` ou `ENCAMINHADA_FISCAL`.
+- `SOLICITANTE`: pode cancelar **apenas a propria solicitacao** e **somente** quando o status for `ABERTA`.
+- `FISCAL`: nao pode cancelar (403).
+- Status incompativel retorna 409.
+- O cancelamento e um soft-delete: seta `status = 'CANCELADA'` e grava `solicitacao_status_historico`.
+- Linha, anexos e historico sao preservados para auditoria.
 
 ## Regras de Status
 

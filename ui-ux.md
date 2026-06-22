@@ -1,8 +1,8 @@
 # UI/UX — Autoriza Poda
 
-Documento de referência de design do sistema. **É a fonte única de verdade para a interface.** Sempre que houver conflito entre este arquivo e um hábito antigo do código, **este arquivo vence**.
+Documento de referência de design do sistema. **É a fonte única de verdade para a interface.** Em conflito entre este arquivo e um hábito antigo do código, **este arquivo vence**.
 
-Referências de qualidade-alvo: **Linear, Vercel, shadcn/ui**. O produto é um sistema administrativo municipal (autorização de poda de árvores) — o tom é **limpo, calmo, confiável e denso na medida certa**, não chamativo. Identidade visual: neutros frios + verde institucional (a folha do logo).
+Referências de qualidade: **Linear, Vercel, shadcn/ui**. **O sistema é usado principalmente em dispositivos móveis** — o alvo é parecer um **app nativo**, não um site espremido. Tom: limpo, calmo, confiável. Identidade: neutros frios + verde institucional.
 
 Stack de UI: **React + TypeScript + Tailwind CSS + shadcn/ui + lucide-react + sonner**, fonte **Inter**.
 
@@ -10,186 +10,113 @@ Stack de UI: **React + TypeScript + Tailwind CSS + shadcn/ui + lucide-react + so
 
 ## 1. Princípios
 
-1. **Clareza acima de decoração.** Cada elemento tem uma função. Nada é adicionado só para "enfeitar".
-2. **Densidade adequada.** Interface administrativa é densa: tabelas compactas, espaçamento contido, leitura rápida. Não desperdiçar altura vertical.
-3. **Hierarquia por tipografia e cor, não por peso pesado.** Títulos em semibold, corpo em normal. Contraste vem de tamanho/cor, não de negrito espalhado.
-4. **Consistência.** A mesma intenção usa sempre o mesmo componente, a mesma cor e o mesmo texto. Um botão "Salvar" sempre se parece e se comporta igual em todo o sistema.
-5. **Sutileza.** Bordas finas (1px), sombras leves, cantos com raio moderado, cores dessaturadas. Sem sombras pesadas nem bordas grossas.
-6. **Feedback imediato e efêmero.** Resultado de ação aparece em **toast**, nunca como bloco fixo ocupando a tela.
+1. **Mobile-first.** Desenhe primeiro para a tela pequena (~360–390px) e depois amplie. Toda tela tem de ser confortável no celular antes de ser no desktop.
+2. **Sensação de app nativo.** Alvos de toque generosos, transições curtas, navegação por gestos/tap, nada de interação que dependa de mouse (hover).
+3. **Clareza acima de decoração.** Cada elemento tem função.
+4. **Densidade adequada ao contexto.** Compacto no desktop; no mobile, respiro e alvos maiores.
+5. **Hierarquia por tipografia e cor, não por negrito espalhado.**
+6. **Consistência.** Mesma intenção → mesmo componente, cor e texto.
+7. **Sutileza.** Bordas finas, sombras leves, raios moderados, cores dessaturadas.
+8. **Feedback imediato e efêmero** via toast — nunca bloco fixo na tela.
 
 ---
 
-## 2. Anti-padrões — o que NUNCA fazer
+## 2. Mobile-first e sensação de app nativo
 
-Esta seção existe porque o sistema acumulou vícios visuais. **Evite explicitamente:**
+Esta seção é prioritária. Toda tela deve segui-la.
 
-- ❌ **Texto digitado em inputs com negrito.** Valor de input é sempre `font-normal` (400). Negrito em campo é erro.
-- ❌ **Mensagens de status fixas no layout** (ex.: barra verde "Usuário atualizado." parada no topo). Substituir por **toast (sonner)**.
-- ❌ **Ícone sobrepondo o placeholder** do campo de busca. O texto nunca passa por baixo do ícone.
-- ❌ **Selects nativos sem padronização** — seta colada na borda, desalinhada. Padronizar todos.
-- ❌ **Linhas de tabela muito altas.** Densidade compacta, não `py-6`.
-- ❌ **Tela inteira para uma edição simples** (ex.: perfil). Usar **dialog/modal**.
-- ❌ **Títulos redundantes** (ex.: "Meu perfil" repetido no eyebrow e no card).
-- ❌ **Dois botões diferentes com a mesma ação.** Cada ícone/ação tem um comportamento único.
-- ❌ Sombras fortes (`shadow-xl`+ em cards comuns), bordas grossas, raios exagerados, cores saturadas/berrantes.
-- ❌ Várias fontes ou pesos aleatórios. Só Inter, só a escala definida abaixo.
+- **Breakpoints:** base = mobile. Use os prefixos do Tailwind (`sm:`, `md:`, `lg:`) para **adicionar** complexidade em telas maiores, nunca para "consertar" o mobile depois.
+- **Alvos de toque:** mínimo **44×44px** em qualquer elemento tocável (botões, ícones de ação, linhas clicáveis). Espaçamento suficiente entre alvos para não errar o toque.
+- **Tabelas viram cartões no mobile.** Tabela com muitas colunas (Solicitações, Usuários) **não** deve virar scroll horizontal no celular. Abaixo de `md`, cada registro vira um **cartão empilhado** com pares rótulo/valor e as ações acessíveis. Tabela tradicional só de `md` para cima.
+- **Modais viram tela cheia / bottom sheet no mobile.** Abaixo de `sm`/`md`, os `Dialog` ocupam a tela inteira (ou sobem como bottom sheet), com header fixo (título + fechar) e conteúdo rolável. Modal centralizado estreito é só para desktop.
+- **Navegação:** a sidebar fixa vira **drawer** (menu hambúrguer) ou **barra inferior de abas** no mobile. Top bar fixa com o essencial.
+- **Áreas seguras:** respeitar notch/barra do sistema com `env(safe-area-inset-*)` (padding em top/bottom quando fixo).
+- **Rolagem:** vertical com momentum; **nunca** provocar scroll horizontal na página. Conteúdo se ajusta à largura.
+- **Sem hover-only:** toda ação tem de ser alcançável por toque. Nada de revelar botão só no hover.
+- **Inputs no mobile:** fonte **≥16px** para o iOS não dar zoom; usar `type`/`inputmode` certos (`email`, `tel`, numérico) para abrir o teclado adequado; campos e botões largos (full-width quando fizer sentido).
+- **Botões primários no mobile:** tendem a ocupar a largura toda (full-width) e ficar ao alcance do polegar.
+- **Toasts (sonner):** posicionados no topo dentro da área segura; não cobrir ações.
+- **Transições curtas** (~150–200ms), sem animação chamativa; respeitar `prefers-reduced-motion`.
 
 ---
 
-## 3. Design tokens
+## 3. Anti-padrões — NUNCA fazer
 
-Use a convenção de CSS variables do shadcn/ui (HSL) e consuma via Tailwind (`bg-primary`, `text-muted-foreground`, `border-border`, etc.). Ajuste os valores no `globals.css`/tema; **não** chumbe cores hex soltas nos componentes.
+- ❌ **Tabela com scroll horizontal como única saída no mobile** → no celular vira cartão.
+- ❌ **Modal centralizado apertado no mobile** → vira tela cheia / bottom sheet.
+- ❌ **Alvo de toque pequeno** (ícone solto < 44px) ou botões colados.
+- ❌ **Interação que só funciona no hover** (mouse).
+- ❌ valor de input em negrito → sempre `font-normal`.
+- ❌ mensagem de status fixa no layout → sempre toast (sonner).
+- ❌ ícone cobrindo o placeholder do campo de busca.
+- ❌ select com seta colada/desalinhada na borda.
+- ❌ linha de tabela alta (desktop) → densidade compacta.
+- ❌ tela inteira para edição simples → modal/sheet.
+- ❌ títulos redundantes; dois botões/ícones com a mesma ação.
+- ❌ sombras pesadas, bordas grossas, cores saturadas, hex solto no componente.
+
+---
+
+## 4. Design tokens
+
+CSS variables do shadcn/ui (HSL), consumidas via Tailwind (`bg-primary`, `text-muted-foreground`, `border-border`). Não chumbar hex nos componentes.
 
 ```css
 :root {
-  /* Neutros (cinza levemente frio) */
-  --background: 0 0% 100%;
-  --foreground: 222 22% 11%;        /* texto principal */
-  --muted: 210 20% 97%;             /* fundos sutis / zebra */
-  --muted-foreground: 215 16% 47%;  /* texto secundário, labels */
-  --border: 214 20% 90%;            /* bordas hairline */
-  --input: 214 20% 90%;
-  --ring: 142 60% 36%;              /* anel de foco (verde) */
-
-  /* Primária — verde institucional Autoriza Poda */
-  --primary: 142 71% 29%;           /* ~#15803d botões primários */
-  --primary-foreground: 0 0% 100%;
-  --primary-soft: 142 52% 94%;      /* fundo do badge/logo verde claro */
-
-  /* Superfícies */
-  --card: 0 0% 100%;
-  --card-foreground: 222 22% 11%;
-  --popover: 0 0% 100%;
-
-  /* Semânticas (dessaturadas, modernas) */
-  --success: 142 71% 29%;
-  --success-soft: 142 52% 94%;
-  --warning: 35 92% 45%;
-  --warning-soft: 40 96% 94%;
-  --destructive: 0 72% 45%;
-  --destructive-soft: 0 86% 97%;
-  --info: 214 80% 48%;
-  --info-soft: 214 95% 96%;
-
-  --radius: 0.5rem; /* 8px base */
+  --background:0 0% 100%; --foreground:222 22% 11%;
+  --muted:210 20% 97%; --muted-foreground:215 16% 47%;
+  --border:214 20% 90%; --input:214 20% 90%; --ring:142 60% 36%;
+  --primary:142 71% 29%; --primary-foreground:0 0% 100%; --primary-soft:142 52% 94%;
+  --success:142 71% 29%; --warning:35 92% 45%; --destructive:0 72% 45%; --info:214 80% 48%;
+  --radius:0.5rem; /* 8px; cards/modais rounded-xl; badges rounded-full */
 }
 ```
-
-### Raio
-- Base `--radius` = 8px. Inputs/botões: 8px. Cards/modais: 12px (`rounded-xl`). Badges: full (`rounded-full`).
-
-### Sombra
-- Cards: `shadow-sm` (sutil). Modais/popovers: `shadow-lg`. Nada além disso em uso comum.
-
-### Espaçamento
-- Escala Tailwind padrão (múltiplos de 4px). Padding interno de card: `p-6`. Gaps de formulário: `gap-4`. **Tabela é exceção** (densa, ver §5).
+Sombra: cards `shadow-sm`, modais `shadow-lg`. Borda: 1px `border-border`.
 
 ---
 
-## 4. Tipografia
+## 5. Tipografia (Inter)
 
-Fonte única: **Inter**. Texto base **14px** (`text-sm`) — padrão de app administrativo (Linear/Vercel). Pesos com restrição:
+Base **14px** (`text-sm`) no desktop; **inputs ≥16px no mobile** (evita zoom do iOS). Pesos com restrição:
 
-| Uso | Tamanho | Peso |
-|---|---|---|
-| Título de página / card | `text-xl`–`text-2xl` | `font-semibold` (600) |
-| Subtítulo / descrição | `text-sm` | `font-normal` (400), `text-muted-foreground` |
-| Eyebrow / label de seção | `text-xs` uppercase, `tracking-wide` | `font-medium` (500), `text-muted-foreground` |
-| Label de campo | `text-sm` | `font-medium` (500) |
-| **Valor de input / corpo** | `text-sm` | **`font-normal` (400)** |
-| Texto de botão | `text-sm` | `font-medium` (500) |
-| Dados de tabela | `text-sm` | `font-normal` (400) |
-
-**Regra dura:** valores digitados, conteúdo de células e texto corrido são **sempre 400**. Negrito só em título/label, nunca no conteúdo.
-
----
-
-## 5. Componentes
-
-Prefira os componentes do **shadcn/ui** já instalados. Padronize cada um conforme abaixo.
-
-### Botões (`Button`)
-Variantes (intenção → estilo):
-- **primary** — ação principal. Verde sólido (`bg-primary text-primary-foreground`), `hover` levemente mais escuro.
-- **secondary / outline** — ação secundária (ex.: "Cancelar", "Voltar"). Fundo branco, borda `border-border`, texto `foreground`.
-- **ghost** — ação terciária / ícones de tabela. Sem fundo, `hover:bg-muted`.
-- **destructive** — excluir/desativar. `bg-destructive` ou outline vermelho.
-
-Regras: altura `h-9` (padrão) / `h-8` (compacto em tabela). Ícone (lucide) à esquerda do texto com `gap-2`, tamanho `h-4 w-4`. Estado **loading** com spinner e `disabled`. Sempre `focus-visible:ring-2 ring-ring`. Botão de ícone puro: quadrado (`h-8 w-8`), `aria-label` obrigatório.
-
-### Inputs (`Input`)
-- Altura `h-9`, `px-3`, `text-sm`, **`font-normal`**, `rounded-md`, `border-input`.
-- Foco: `focus-visible:ring-2 ring-ring ring-offset-0`, sem borda grossa.
-- Erro (com zod): borda `border-destructive` + mensagem `text-xs text-destructive` abaixo.
-- **Campo com ícone (busca):** ícone `absolute left-3` centralizado verticalmente (`h-4 w-4 text-muted-foreground`) e input com `pl-9`/`pl-10` para o placeholder **não** ficar sob o ícone.
-
-### Select (`Select` do shadcn — preferir ao `<select>` nativo)
-- Use o `Select` do shadcn para ter seta e padding consistentes. Se mantiver nativo, aplicar `appearance-none` + ícone `ChevronDown` (lucide) posicionado `right-3`, com `pr-9` no controle. Seta **centralizada e com respiro da borda**, igual em todos os filtros.
-
-### Textarea
-- Mesmo estilo do input, `min-h-[80px]`, `font-normal`, redimensionável vertical.
-
-### Tabela (`Table` / TanStack Table)
-- **Densidade compacta:** célula com `px-4 py-2.5` (linha ~44–48px). Nunca `py-5/py-6`.
-- Cabeçalho: `text-xs uppercase tracking-wide text-muted-foreground font-medium`, fundo `bg-muted/50`, borda inferior.
-- Linhas: borda inferior `border-border`, `hover:bg-muted/40`. Zebra é opcional e sutil.
-- Coluna **Ações** alinhada à direita, botões `ghost` `h-8 w-8` com ícone, `gap-1`.
-- Estado vazio: linha única centralizada com mensagem + ação (ver Empty state).
-
-### Dialog / Modal (`Dialog`)
-- Edições e formulários secundários (perfil, editar usuário/solicitação, selecionar fiscal) vão em **modal**, não em tela própria.
-- Largura conforme conteúdo (`sm:max-w-md` a `sm:max-w-2xl`), `rounded-xl`, `shadow-lg`, header com título `font-semibold` + descrição curta `text-muted-foreground`, footer com ações à direita (primária à direita, "Cancelar" à esquerda dela).
-- **Ao salvar com sucesso: fechar o modal, atualizar os dados e disparar toast.** Em erro, manter aberto e mostrar toast/erro de campo.
-
-### Toast (`sonner`)
-- `<Toaster />` montado **uma vez** na raiz, posição `top-right` (ou `bottom-right`), `richColors`.
-- `toast.success` (verde), `toast.error` (vermelho), `toast.info`, `toast.warning`. Texto curto e direto.
-- **Todo** retorno de ação (salvar, criar, encaminhar, excluir, atualizar) usa toast. Mensagens fixas no layout são proibidas (ver anti-padrões).
-
-### Badge de status (`Badge`)
-Pílula `rounded-full`, `text-xs`, `font-medium`, fundo *soft* + texto da cor semântica:
-
-| Status | Cor |
+| Uso | Peso |
 |---|---|
-| Aberta | info (azul) |
-| Em análise | warning (âmbar) |
-| Encaminhada | warning/info |
-| Aprovada | success (verde) |
-| Reprovada | destructive (vermelho) |
-| Concluída | success/neutro |
-| Ativo / Inativo (usuário) | success / muted |
+| Título de página/card | `font-semibold` (600) |
+| Label de campo / texto de botão | `font-medium` (500) |
+| **Valor de input, corpo, dados de tabela/cartão** | **`font-normal` (400)** |
 
-### Card
-- `bg-card`, `border border-border`, `rounded-xl`, `shadow-sm`, `p-6`. Eyebrow opcional (`text-xs uppercase`), título `font-semibold`, descrição `text-muted-foreground`. **Sem título redundante.**
-
-### Estado vazio (Empty state)
-- Ícone leve (lucide), frase curta dizendo o que fazer e, quando aplicável, um botão de ação. Vazio é convite à ação, não espaço morto.
-
-### Loading
-- Botões: spinner + `disabled`. Listas/tabelas: **skeleton** com a forma do conteúdo (não um spinner solto no meio da tela).
+Negrito só em título/label, nunca no conteúdo digitado ou em células.
 
 ---
 
-## 6. Interação e escrita
+## 6. Componentes
 
-- **Vocabulário consistente:** o botão diz o que acontece e o toast confirma com a mesma palavra. "Salvar" → toast "Alterações salvas". "Encaminhar" → "Solicitação encaminhada".
-- **Voz ativa, sentence case.** "Salvar alterações", não "Submeter dados".
-- **Erros são direção, não desculpa.** Diga o que houve e como resolver, na voz do sistema. Mensagem de erro da API sempre via toast.
-- **Foco visível** em todo elemento interativo (`focus-visible:ring-2 ring-ring`). Navegação por teclado funciona em modais (fechar com Esc, foco preso no dialog).
-- **Movimento discreto:** transições curtas (`transition-colors`, ~150ms) em hover/focus. Respeitar `prefers-reduced-motion`. Sem animações chamativas.
-- **Responsivo:** funciona até mobile; tabelas com scroll horizontal quando necessário.
+Prefira os do **shadcn/ui** já instalados.
+
+- **Button:** variantes `primary` (verde sólido), `secondary`/`outline`, `ghost`, `destructive`. Altura `h-9` (desktop) / **alvo ≥44px no mobile**. Ícone lucide `h-4 w-4` com `gap-2`. Loading + disabled. `focus-visible:ring-2 ring-ring`. No mobile, ação principal costuma ser full-width. Botão só-ícone: quadrado com `aria-label`.
+- **Input/Textarea:** `font-normal`, foco por anel (não borda grossa), erro `border-destructive` + `text-xs`. **Mobile: ≥16px, `inputmode`/`type` adequados.** Busca: ícone `absolute left-3` + `pl-9`/`pl-10`.
+- **Upload de imagem (mobile):** oferecer **câmera** e **galeria**. Câmera: `<input type="file" accept="image/*" capture="environment">`. Galeria: `<input type="file" accept="image/*">` (sem `capture`). Dar dois caminhos claros ao usuário (ex.: "Tirar foto" / "Escolher da galeria").
+- **Select:** preferir `Select` do shadcn; seta centralizada com respiro (`pr-9`). Igual em todos os filtros.
+- **Tabela → Cartões no mobile:** desktop = tabela compacta (`px-4 py-2.5`, header `text-xs uppercase text-muted-foreground` em `bg-muted/50`, `hover:bg-muted/40`, Ações à direita `ghost`). **Abaixo de `md`: cada registro vira um cartão** com rótulo/valor empilhados e ações em alvos grandes. Vazio = mensagem + ação; loading = skeleton.
+- **Dialog/Sheet:** edições e visualizações em modal. **Desktop:** centralizado com `max-w` adequado (`sm:max-w-md` a `sm:max-w-2xl`), `rounded-xl`, `shadow-lg`. **Mobile:** tela cheia ou bottom sheet, header fixo (título + fechar), corpo rolável (`max-h`/`overflow-y-auto`), footer com ações ao alcance do polegar. **Ao salvar com sucesso: fechar + atualizar + toast.**
+- **Toast (sonner):** `<Toaster richColors />` uma vez na raiz; topo dentro da área segura. Todo retorno de ação vira toast.
+- **Badge de status (pílula soft):** Aberta=info · Em análise/Encaminhada=warning · Aprovada=success · Reprovada=destructive · Cancelada/Concluída=neutro/success · Ativo=success / Inativo=muted.
+- **Card:** `bg-card border border-border rounded-xl shadow-sm p-6` (p-4 no mobile), sem título redundante.
+- **Visualizador de anexo:** abrir o anexo **dentro de um modal** (imagem em `<img>`, PDF em `<iframe>`/`<object>`), com botão **Download** e tratamento de erro (arquivo inexistente → estado de erro no modal, não JSON cru). Mobile: modal em tela cheia.
 
 ---
 
-## 7. Checklist de revisão (antes de considerar uma tela pronta)
+## 7. Interação e escrita
 
-- [ ] Valores de input em `font-normal` (sem negrito).
-- [ ] Nenhuma mensagem de status fixa — tudo em toast.
-- [ ] Campo de busca: ícone não cobre o placeholder.
-- [ ] Selects padronizados (seta alinhada, com respiro).
-- [ ] Tabela compacta (linha ~44–48px).
-- [ ] Edição em modal, com fechamento + toast no sucesso.
-- [ ] Sem títulos redundantes.
-- [ ] Cada ação/ícone com função única.
-- [ ] Cores via tokens (sem hex solto), sombras/bordas sutis.
-- [ ] Foco visível e navegação por teclado nos modais.
+- **Vocabulário consistente:** botão e toast com a mesma palavra ("Salvar" → "Alterações salvas").
+- Voz ativa, sentence case. Erros dizem o que houve e como resolver, via toast.
+- **Foco visível** e navegação por teclado nos modais (Esc fecha). No mobile, **tudo por toque**, sem depender de hover.
+- Movimento discreto; respeitar `prefers-reduced-motion`.
+
+---
+
+## 8. Checklist por tela (antes de considerar pronta)
+
+**Geral:** input sem negrito · status em toast · busca sem ícone sobre o placeholder · selects padronizados · edição/visualização em modal com fechamento+toast · sem título redundante · cada ação com função única · cores por token · foco visível.
+
+**Mobile (obrigatório):** confortável a ~375px sem scroll horizontal · alvos de toque ≥44px · tabela vira cartão · modal vira tela cheia/sheet · navegação por drawer/abas · inputs ≥16px com teclado certo · nada depende de hover · áreas seguras respeitadas.

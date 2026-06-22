@@ -27,7 +27,11 @@ app.use(cors(corsOptions));
 app.use(helmet());
 app.use(morgan('dev'));
 app.use(express.json());
-app.use('/uploads', express.static(path.resolve(env.uploadDir)));
+app.use('/uploads', (_req, res, next) => {
+  // Permite que o frontend carregue imagens e arquivos cross-origin via <img>/<iframe>
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  next();
+}, express.static(path.resolve(env.uploadDir)));
 
 app.get('/api/health', (_req, res) => {
   res.json({
