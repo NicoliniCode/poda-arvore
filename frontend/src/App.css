@@ -208,7 +208,7 @@
 }
 
 .ui-button {
-  min-height: 40px;
+  min-height: 36px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -217,7 +217,7 @@
   border-radius: 6px;
   border: 1px solid transparent;
   cursor: pointer;
-  font-weight: 800;
+  font-weight: 600;
   text-decoration: none;
 }
 
@@ -316,9 +316,10 @@ textarea {
   border-radius: 6px;
   background: var(--color-surface);
   color: var(--color-text);
-  font: inherit;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: normal;
   min-height: 40px;
-  padding: 8px 10px;
 }
 
 textarea {

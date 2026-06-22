@@ -1,8 +1,10 @@
 import type { FormEvent, KeyboardEvent } from 'react'
 import {
+  ChevronDown,
   Eye,
   Pencil,
   Plus,
+  Save,
   Search,
   ShieldCheck,
   UserCheck,
@@ -113,31 +115,37 @@ export function UsersDashboard({
 
           <label className="grid gap-1.5">
             <span className="text-xs font-extrabold uppercase text-[#647169]">Perfil</span>
-            <select
-              className="min-h-10 rounded-md border border-[#cbd7cf] bg-white px-2.5 py-2 text-[#17231d] outline-none transition focus:border-[#166534] focus:ring-3 focus:ring-blue-600/30"
-              value={perfilFilter}
-              onChange={(event) => onPerfilFilterChange(event.target.value as UsuarioPerfilFilter)}
-            >
-              <option value="TODOS">Todos</option>
-              {perfis.map((perfil) => (
-                <option key={perfil.id_perfil} value={perfil.nome}>
-                  {formatPerfil(perfil.nome)}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                className="min-h-10 w-full appearance-none rounded-md border border-[#cbd7cf] bg-white px-2.5 py-2 pr-8 font-normal text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/30"
+                value={perfilFilter}
+                onChange={(event) => onPerfilFilterChange(event.target.value as UsuarioPerfilFilter)}
+              >
+                <option value="TODOS">Todos</option>
+                {perfis.map((perfil) => (
+                  <option key={perfil.id_perfil} value={perfil.nome}>
+                    {formatPerfil(perfil.nome)}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={16} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" aria-hidden />
+            </div>
           </label>
 
           <label className="grid gap-1.5">
             <span className="text-xs font-extrabold uppercase text-[#647169]">Status</span>
-            <select
-              className="min-h-10 rounded-md border border-[#cbd7cf] bg-white px-2.5 py-2 text-[#17231d] outline-none transition focus:border-[#166534] focus:ring-3 focus:ring-blue-600/30"
-              value={statusFilter}
-              onChange={(event) => onStatusFilterChange(event.target.value as UsuarioStatusFilter)}
-            >
-              <option value="TODOS">Todos</option>
-              <option value="S">Ativos</option>
-              <option value="N">Inativos</option>
-            </select>
+            <div className="relative">
+              <select
+                className="min-h-10 w-full appearance-none rounded-md border border-[#cbd7cf] bg-white px-2.5 py-2 pr-8 font-normal text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/30"
+                value={statusFilter}
+                onChange={(event) => onStatusFilterChange(event.target.value as UsuarioStatusFilter)}
+              >
+                <option value="TODOS">Todos</option>
+                <option value="S">Ativos</option>
+                <option value="N">Inativos</option>
+              </select>
+              <ChevronDown size={16} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" aria-hidden />
+            </div>
           </label>
         </div>
       </div>
@@ -214,8 +222,8 @@ export function CreateUserModal({
           <Button type="button" variant="secondary" onClick={onClose}>
             Cancelar
           </Button>
-          <Button type="submit" variant="primary" icon={<Plus size={18} />} loading={loading}>
-            Criar usuário
+          <Button type="submit" variant="primary" icon={<Save size={18} />} loading={loading}>
+            Salvar
           </Button>
         </div>
       </form>
@@ -270,8 +278,8 @@ export function EditUserModal({
             >
               {usuario.ativo === 'S' ? 'Inativar usuário' : 'Ativar usuário'}
             </Button>
-            <Button type="submit" variant="primary" icon={<Pencil size={18} />} loading={loading}>
-              Salvar alterações
+            <Button type="submit" variant="primary" icon={<Save size={18} />} loading={loading}>
+              Salvar
             </Button>
           </div>
         </form>
@@ -302,7 +310,7 @@ function UserRow({
     <div
       role="button"
       tabIndex={0}
-      className="grid cursor-pointer gap-3 px-3 py-4 transition hover:bg-[#f6f8f5] focus:bg-[#f6f8f5] focus:outline-none focus:ring-3 focus:ring-blue-600/20 sm:px-4 lg:grid-cols-[1.2fr_1.35fr_0.8fr_0.7fr_0.9fr_120px] lg:items-center"
+      className="grid cursor-pointer gap-3 px-4 py-2.5 transition hover:bg-[#f6f8f5] focus:bg-[#f6f8f5] focus:outline-none focus:ring-2 focus:ring-blue-600/20 lg:grid-cols-[1.2fr_1.35fr_0.8fr_0.7fr_0.9fr_120px] lg:items-center"
       onClick={() => onEdit(usuario)}
       onKeyDown={handleKeyDown}
     >

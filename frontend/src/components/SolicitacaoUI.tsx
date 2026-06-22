@@ -1,11 +1,13 @@
-import type { FormEvent, KeyboardEvent, ReactNode } from 'react'
+import { useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react'
 import {
   CalendarClock,
   CheckCircle2,
+  ChevronDown,
   ClipboardList,
   Eye,
   FileText,
   MapPin,
+  Pencil,
   Plus,
   Save,
   Search,
@@ -17,6 +19,7 @@ import {
 import { statusInfo } from '../constants/status'
 import type { Solicitacao, SolicitacaoDetails, StatusSolicitacao, Usuario } from '../types/domain'
 import { buildEndereco, formatDate, getAttachmentUrl } from '../utils/formatters'
+import { cn } from '@/lib/utils'
 import {
   Button,
   Card,
@@ -42,10 +45,12 @@ type RequestsDashboardProps = {
   statusFilter: SolicitacaoStatusFilter
   selectedId: number | null
   canCreateSolicitacao: boolean
+  canEditSolicitacao?: (solicitacao: Solicitacao) => boolean
   onSearchChange: (value: string) => void
   onStatusFilterChange: (value: SolicitacaoStatusFilter) => void
   onCreateClick: () => void
   onOpenDetails: (solicitacao: Solicitacao) => void
+  onEditSolicitacao?: (solicitacao: Solicitacao) => void
 }
 
 type SolicitacaoDetailProps = {
@@ -91,10 +96,12 @@ export function RequestsDashboard({
   statusFilter,
   selectedId,
   canCreateSolicitacao,
+  canEditSolicitacao,
   onSearchChange,
   onStatusFilterChange,
   onCreateClick,
   onOpenDetails,
+  onEditSolicitacao,
 }: RequestsDashboardProps) {
   return (
     <section className="grid gap-4">
@@ -154,18 +161,21 @@ export function RequestsDashboard({
 
           <label className="grid gap-1.5">
             <span className="text-xs font-extrabold uppercase text-[#647169]">Status</span>
-            <select
-              className="min-h-10 rounded-md border border-[#cbd7cf] bg-white px-2.5 py-2 text-[#17231d] outline-none transition focus:border-[#166534] focus:ring-3 focus:ring-blue-600/30"
-              value={statusFilter}
-              onChange={(event) => onStatusFilterChange(event.target.value as SolicitacaoStatusFilter)}
-            >
-              <option value="TODAS">Todos</option>
-              {Object.entries(statusInfo).map(([status, info]) => (
-                <option key={status} value={status}>
-                  {info.label}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                className="min-h-10 w-full appearance-none rounded-md border border-[#cbd7cf] bg-white px-2.5 py-2 pr-8 font-normal text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/30"
+                value={statusFilter}
+                onChange={(event) => onStatusFilterChange(event.target.value as SolicitacaoStatusFilter)}
+              >
+                <option value="TODAS">Todos</option>
+                {Object.entries(statusInfo).map(([status, info]) => (
+                  <option key={status} value={status}>
+                    {info.label}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={16} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" aria-hidden />
+            </div>
           </label>
         </div>
 
@@ -184,7 +194,9 @@ export function RequestsDashboard({
               key={solicitacao.id_solicitacao}
               solicitacao={solicitacao}
               selected={selectedId === solicitacao.id_solicitacao}
+              canEdit={canEditSolicitacao?.(solicitacao) ?? false}
               onOpenDetails={onOpenDetails}
+              onEdit={onEditSolicitacao}
             />
           ))}
         </div>
@@ -346,11 +358,15 @@ function SummaryCard({ label, value, icon }: { label: string; value: number; ico
 function SolicitacaoRow({
   solicitacao,
   selected,
+  canEdit,
   onOpenDetails,
+  onEdit,
 }: {
   solicitacao: Solicitacao
   selected: boolean
+  canEdit: boolean
   onOpenDetails: (solicitacao: Solicitacao) => void
+  onEdit?: (solicitacao: Solicitacao) => void
 }) {
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Enter' || event.key === ' ') {
@@ -363,10 +379,10 @@ function SolicitacaoRow({
     <div
       role="button"
       tabIndex={0}
-      className={[
-        'grid w-full cursor-pointer gap-3 px-3 py-4 text-left transition hover:bg-[#f6f8f5] focus:bg-[#f6f8f5] focus:outline-none focus:ring-3 focus:ring-blue-600/20 sm:px-4 xl:grid-cols-[110px_minmax(220px,1fr)_minmax(160px,0.8fr)_minmax(150px,0.7fr)_160px_96px] xl:items-center',
+      className={cn(
+        'grid w-full cursor-pointer gap-3 px-4 py-2.5 text-left transition hover:bg-[#f6f8f5] focus:bg-[#f6f8f5] focus:outline-none focus:ring-2 focus:ring-blue-600/20 sm:px-4 xl:grid-cols-[110px_minmax(220px,1fr)_minmax(160px,0.8fr)_minmax(150px,0.7fr)_160px_96px] xl:items-center',
         selected ? 'bg-[#eef3ec]' : 'bg-white',
-      ].join(' ')}
+      )}
       onClick={() => onOpenDetails(solicitacao)}
       onKeyDown={handleKeyDown}
     >
@@ -380,7 +396,7 @@ function SolicitacaoRow({
         <small className="block text-[11px] font-extrabold uppercase tracking-[0.06em] text-[#647169] xl:hidden">
           Endereço
         </small>
-        <strong className="block break-words text-sm text-[#17231d] xl:truncate">{buildEndereco(solicitacao)}</strong>
+        <strong className="block wrap-break-word text-sm text-[#17231d] xl:truncate">{buildEndereco(solicitacao)}</strong>
         <small className="mt-1 block text-xs font-bold text-[#647169]">
           {formatDate(solicitacao.data_solicitacao)}
         </small>
@@ -405,7 +421,17 @@ function SolicitacaoRow({
         </small>
         <StatusBadge status={solicitacao.status} />
       </span>
-      <span className="flex justify-start xl:justify-end">
+      <span className="flex justify-start gap-1 xl:justify-end">
+        {canEdit && onEdit ? (
+          <IconButton
+            label="Editar"
+            icon={<Pencil size={16} />}
+            onClick={(event) => {
+              event.stopPropagation()
+              onEdit(solicitacao)
+            }}
+          />
+        ) : null}
         <IconButton
           label="Ver detalhes"
           icon={<Eye size={16} />}
@@ -432,6 +458,10 @@ function SolicitacaoDetail({
   onForward,
   onVistoria,
 }: SolicitacaoDetailProps) {
+  const [selectedFiscalId, setSelectedFiscalId] = useState<number | null>(null)
+  const [fiscalModalOpen, setFiscalModalOpen] = useState(false)
+  const selectedFiscal = fiscais.find((f) => f.id_usuario === selectedFiscalId) ?? null
+
   return (
     <div className="grid gap-4">
       <div className="flex flex-col gap-3 rounded-lg border border-[#d8e1d5] bg-[#f6f8f5] p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -481,24 +511,70 @@ function SolicitacaoDetail({
 
       {canForwardToFiscal && !isFinal ? (
         <Card title="Encaminhar" eyebrow="Ação administrativa">
-          <form className="grid gap-3 lg:grid-cols-[240px_minmax(0,1fr)_auto] lg:items-end" onSubmit={onForward}>
-            <SelectField label="Fiscal responsável" name="idFiscal" required defaultValue="">
-              <option value="" disabled>
-                Selecione
-              </option>
-              {fiscais.map((fiscal) => (
-                <option key={fiscal.id_usuario} value={fiscal.id_usuario}>
-                  {fiscal.nome}
-                </option>
-              ))}
-            </SelectField>
+          <form className="grid gap-3" onSubmit={onForward}>
+            <input type="hidden" name="idFiscal" value={selectedFiscalId ?? ''} readOnly />
+            <div className="grid gap-1.5">
+              <span className="text-xs font-extrabold uppercase text-[#647169]">Fiscal responsável</span>
+              <div className="flex flex-wrap items-center gap-3">
+                {selectedFiscal ? (
+                  <span className="flex items-center gap-2 text-sm font-semibold text-[#17231d]">
+                    <ShieldCheck size={14} className="text-[#166534]" aria-hidden />
+                    {selectedFiscal.nome}
+                  </span>
+                ) : (
+                  <span className="text-sm font-semibold text-[#647169]">Nenhum fiscal selecionado</span>
+                )}
+                <Button type="button" variant="secondary" onClick={() => setFiscalModalOpen(true)}>
+                  {selectedFiscal ? 'Trocar fiscal' : 'Selecionar fiscal'}
+                </Button>
+              </div>
+            </div>
             <Field label="Observação" name="observacao" />
-            <Button type="submit" variant="primary" icon={<Send size={18} />} loading={loading}>
-              Encaminhar
-            </Button>
+            <div className="flex justify-end">
+              <Button type="submit" variant="primary" icon={<Send size={18} />} loading={loading} disabled={!selectedFiscalId}>
+                Encaminhar
+              </Button>
+            </div>
           </form>
         </Card>
       ) : null}
+
+      <Modal open={fiscalModalOpen} title="Selecionar fiscal" onClose={() => setFiscalModalOpen(false)}>
+        {fiscais.length === 0 ? (
+          <p className="py-4 text-center text-sm font-semibold text-[#647169]">Nenhum fiscal disponível.</p>
+        ) : (
+          <div className="overflow-hidden rounded-lg border border-[#d8e1d5]">
+            <div className="hidden grid-cols-2 gap-3 border-b border-[#d8e1d5] bg-[#f6f8f5] px-4 py-2.5 text-xs font-extrabold uppercase tracking-[0.06em] text-[#647169] sm:grid">
+              <span>Nome</span>
+              <span>E-mail</span>
+            </div>
+            <div className="divide-y divide-[#e3ebe1]">
+              {fiscais.map((fiscal) => (
+                <div
+                  key={fiscal.id_usuario}
+                  role="button"
+                  tabIndex={0}
+                  className={cn(
+                    'grid cursor-pointer gap-1 px-4 py-2.5 transition hover:bg-[#f6f8f5] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-600/20 sm:grid-cols-2 sm:items-center sm:gap-3',
+                    selectedFiscalId === fiscal.id_usuario ? 'bg-[#eef3ec]' : '',
+                  )}
+                  onClick={() => { setSelectedFiscalId(fiscal.id_usuario); setFiscalModalOpen(false) }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      setSelectedFiscalId(fiscal.id_usuario)
+                      setFiscalModalOpen(false)
+                    }
+                  }}
+                >
+                  <strong className="block truncate text-sm text-[#17231d]">{fiscal.nome}</strong>
+                  <span className="truncate text-sm font-semibold text-[#647169]">{fiscal.email}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </Modal>
 
       {canRegisterVistoria && !isFinal ? (
         <Card title="Vistoria" eyebrow="Parecer técnico">
@@ -525,7 +601,7 @@ function SolicitacaoDetail({
         <ol className="grid gap-3">
           {details?.historico.map((item) => (
             <li key={item.id_historico} className="grid grid-cols-[14px_minmax(0,1fr)] gap-3">
-              <span className={`mt-2 h-2.5 w-2.5 rounded-full ${statusInfo[item.status].className}`} />
+              <span className={cn('mt-2 h-2.5 w-2.5 rounded-full', statusInfo[item.status].className)} />
               <div className="grid gap-1">
                 <strong className="text-sm text-[#17231d]">{statusInfo[item.status].label}</strong>
                 <span className="text-sm font-semibold text-[#647169]">{item.observacao || '-'}</span>
@@ -578,7 +654,7 @@ function Info({ label, value, icon }: { label: string; value: string; icon: Reac
       </span>
       <div className="min-w-0">
         <small className="block text-xs font-extrabold uppercase text-[#647169]">{label}</small>
-        <strong className="block break-words text-sm text-[#17231d]">{value}</strong>
+        <strong className="block wrap-break-word text-sm text-[#17231d]">{value}</strong>
       </div>
     </div>
   )

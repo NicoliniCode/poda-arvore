@@ -1,15 +1,16 @@
 import { useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react'
-import { Paperclip, UploadCloud, X } from 'lucide-react'
+import { ChevronDown, Paperclip, UploadCloud, X } from 'lucide-react'
 import type { StatusSolicitacao } from '../types/domain'
 import { statusInfo } from '../constants/status'
+import { cn } from '@/lib/utils'
 
 type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost'
 
 const buttonVariants: Record<ButtonVariant, string> = {
-  primary: 'border-[#166534] bg-[#166534] text-white hover:brightness-95',
-  secondary: 'border-[#cbd7cf] bg-white text-[#14532d] hover:bg-[#f6f8f5]',
-  danger: 'border-[#991b1b] bg-[#991b1b] text-white hover:brightness-95',
-  ghost: 'border-transparent bg-transparent text-[#14532d] hover:bg-[#eef3ec]',
+  primary: 'border-primary bg-primary text-primary-foreground hover:brightness-95',
+  secondary: 'border-border bg-background text-foreground hover:bg-surface-muted',
+  danger: 'border-destructive bg-destructive text-white hover:brightness-95',
+  ghost: 'border-transparent bg-transparent text-foreground hover:bg-surface-muted',
 }
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -37,12 +38,12 @@ export function Button({
 }: ButtonProps) {
   return (
     <button
-      className={[
-        'ui-button inline-flex min-h-10 items-center justify-center gap-2 rounded-md border px-3.5 text-sm font-extrabold transition disabled:cursor-not-allowed disabled:opacity-55',
+      className={cn(
+        'ui-button inline-flex items-center justify-center gap-2 rounded-md border px-3.5 text-sm transition disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
         `ui-button-${variant}`,
         buttonVariants[variant],
         className,
-      ].join(' ').trim()}
+      )}
       disabled={disabled || loading}
       {...props}
     >
@@ -68,11 +69,11 @@ export function IconButton({
       type="button"
       aria-label={label}
       title={label}
-      className={[
-        'inline-grid h-10 w-10 place-items-center rounded-md border text-sm transition focus:outline-none focus:ring-3 focus:ring-blue-600/30 disabled:cursor-not-allowed disabled:opacity-55',
+      className={cn(
+        'inline-grid h-8 w-8 place-items-center rounded-md border text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
         iconButtonTones[tone],
         className,
-      ].join(' ').trim()}
+      )}
       {...props}
     >
       {icon}
@@ -117,10 +118,10 @@ export function PageHeader({
 export function Input({ className = '', ...props }: InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
-      className={[
-        'min-h-10 w-full rounded-md border border-[#cbd7cf] bg-white px-2.5 py-2 text-[#17231d] outline-none transition focus:border-[#166534] focus:ring-3 focus:ring-blue-600/30',
+      className={cn(
+        'min-h-10 w-full rounded-md border border-[#cbd7cf] bg-white px-2.5 py-2 font-normal text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/30',
         className,
-      ].join(' ').trim()}
+      )}
       {...props}
     />
   )
@@ -210,15 +211,23 @@ export function Field({ label, helper, error, id, ...props }: FieldProps) {
 type TextareaFieldProps = TextareaHTMLAttributes<HTMLTextAreaElement> & {
   label: string
   helper?: string
+  className?: string
 }
 
-export function TextareaField({ label, helper, id, ...props }: TextareaFieldProps) {
+export function TextareaField({ label, helper, id, className, ...props }: TextareaFieldProps) {
   const fieldId = id || props.name
 
   return (
     <label className="form-field" htmlFor={fieldId}>
       <span>{label}</span>
-      <textarea id={fieldId} {...props} />
+      <textarea
+        id={fieldId}
+        className={cn(
+          'min-h-20 w-full resize-vertical rounded-md border border-[#cbd7cf] bg-white px-2.5 py-2 font-normal text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/30',
+          className,
+        )}
+        {...props}
+      />
       {helper ? <small>{helper}</small> : null}
     </label>
   )
@@ -229,15 +238,29 @@ type SelectFieldProps = SelectHTMLAttributes<HTMLSelectElement> & {
   children: ReactNode
 }
 
-export function SelectField({ label, id, children, ...props }: SelectFieldProps) {
+export function SelectField({ label, id, children, className, ...props }: SelectFieldProps) {
   const fieldId = id || props.name
 
   return (
     <label className="form-field" htmlFor={fieldId}>
       <span>{label}</span>
-      <select id={fieldId} {...props}>
-        {children}
-      </select>
+      <div className="relative">
+        <select
+          id={fieldId}
+          className={cn(
+            'min-h-10 w-full appearance-none rounded-md border border-[#cbd7cf] bg-white px-2.5 py-2 pr-8 font-normal text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/30',
+            className,
+          )}
+          {...props}
+        >
+          {children}
+        </select>
+        <ChevronDown
+          size={16}
+          className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground"
+          aria-hidden
+        />
+      </div>
     </label>
   )
 }
@@ -277,7 +300,13 @@ export function Card({
 }
 
 export function StatusBadge({ status }: { status: StatusSolicitacao }) {
-  return <span className={`status-pill ${statusInfo[status].className}`}>{statusInfo[status].label}</span>
+  const info = statusInfo[status]
+  return (
+    <span className={cn('inline-flex w-fit items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-medium ring-1 ring-inset', info.badgeClass)}>
+      <span className={cn('h-1.5 w-1.5 rounded-full', info.className)} aria-hidden />
+      {info.label}
+    </span>
+  )
 }
 
 export function Feedback({

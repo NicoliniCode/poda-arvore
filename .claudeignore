@@ -1,0 +1,28 @@
+# Dependencias
+node_modules/
+**/node_modules/
+
+# Builds
+dist/
+build/
+**/dist/
+**/build/
+
+# Uploads de usuario (conteudo real, nao codigo)
+uploads/
+
+# Ambiente
+.env
+.env.*
+!.env.example
+
+# Logs e temporarios
+*.log
+.DS_Store
+.vscode/
+.idea/
+
+# Lockfiles pesados (Claude pode ler package.json se precisar)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml

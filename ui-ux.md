@@ -1,508 +1,195 @@
-# UI/UX do Sistema Autoriza Poda
+# UI/UX — Autoriza Poda
+
+Documento de referência de design do sistema. **É a fonte única de verdade para a interface.** Sempre que houver conflito entre este arquivo e um hábito antigo do código, **este arquivo vence**.
 
-Este documento define as regras visuais e de experiencia do usuario para o frontend do sistema Autoriza Poda. Toda tela nova ou alteracao de interface deve seguir estes padroes.
+Referências de qualidade-alvo: **Linear, Vercel, shadcn/ui**. O produto é um sistema administrativo municipal (autorização de poda de árvores) — o tom é **limpo, calmo, confiável e denso na medida certa**, não chamativo. Identidade visual: neutros frios + verde institucional (a folha do logo).
 
-## Objetivo da Interface
+Stack de UI: **React + TypeScript + Tailwind CSS + shadcn/ui + lucide-react + sonner**, fonte **Inter**.
 
-A interface deve transmitir confianca, clareza e organizacao para um processo administrativo municipal. O sistema deve parecer uma ferramenta de trabalho, nao uma pagina promocional.
+---
 
-Prioridades:
+## 1. Princípios
 
-- Facilitar o cadastro e acompanhamento de solicitacoes.
-- Reduzir duvidas sobre status, responsavel e proximo passo.
-- Dar agilidade ao administrador e ao fiscal.
-- Evitar excesso visual que prejudique leitura e operacao.
-- Manter consistencia entre todas as telas.
+1. **Clareza acima de decoração.** Cada elemento tem uma função. Nada é adicionado só para "enfeitar".
+2. **Densidade adequada.** Interface administrativa é densa: tabelas compactas, espaçamento contido, leitura rápida. Não desperdiçar altura vertical.
+3. **Hierarquia por tipografia e cor, não por peso pesado.** Títulos em semibold, corpo em normal. Contraste vem de tamanho/cor, não de negrito espalhado.
+4. **Consistência.** A mesma intenção usa sempre o mesmo componente, a mesma cor e o mesmo texto. Um botão "Salvar" sempre se parece e se comporta igual em todo o sistema.
+5. **Sutileza.** Bordas finas (1px), sombras leves, cantos com raio moderado, cores dessaturadas. Sem sombras pesadas nem bordas grossas.
+6. **Feedback imediato e efêmero.** Resultado de ação aparece em **toast**, nunca como bloco fixo ocupando a tela.
 
-## Padrao Visual Geral
+---
 
-- Visual limpo, institucional e funcional.
-- Composicao baseada em paineis, listas, formularios e areas de detalhe.
-- Evitar visual de landing page, secoes promocionais ou hero grande.
-- Priorizar densidade moderada de informacao, com boa separacao entre blocos.
-- Usar cantos com raio pequeno, preferencialmente entre `6px` e `8px`.
-- Usar sombras discretas apenas quando ajudarem hierarquia.
-- Evitar decoracoes sem funcao, como blobs, orbes, gradientes fortes ou fundos ilustrativos.
+## 2. Anti-padrões — o que NUNCA fazer
 
-## Identidade Visual
+Esta seção existe porque o sistema acumulou vícios visuais. **Evite explicitamente:**
 
-Tema principal:
+- ❌ **Texto digitado em inputs com negrito.** Valor de input é sempre `font-normal` (400). Negrito em campo é erro.
+- ❌ **Mensagens de status fixas no layout** (ex.: barra verde "Usuário atualizado." parada no topo). Substituir por **toast (sonner)**.
+- ❌ **Ícone sobrepondo o placeholder** do campo de busca. O texto nunca passa por baixo do ícone.
+- ❌ **Selects nativos sem padronização** — seta colada na borda, desalinhada. Padronizar todos.
+- ❌ **Linhas de tabela muito altas.** Densidade compacta, não `py-6`.
+- ❌ **Tela inteira para uma edição simples** (ex.: perfil). Usar **dialog/modal**.
+- ❌ **Títulos redundantes** (ex.: "Meu perfil" repetido no eyebrow e no card).
+- ❌ **Dois botões diferentes com a mesma ação.** Cada ícone/ação tem um comportamento único.
+- ❌ Sombras fortes (`shadow-xl`+ em cards comuns), bordas grossas, raios exagerados, cores saturadas/berrantes.
+- ❌ Várias fontes ou pesos aleatórios. Só Inter, só a escala definida abaixo.
 
-- Servico publico municipal.
-- Meio ambiente urbano.
-- Processo administrativo de vistoria e autorizacao.
+---
 
-Elementos recomendados:
+## 3. Design tokens
 
-- Icones simples relacionados a folhas, documentos, usuarios, lista, envio, upload e confirmacao.
-- Linguagem objetiva e institucional.
-- Nomes de acoes claros: `Cadastrar`, `Salvar`, `Encaminhar`, `Registrar vistoria`, `Aprovar`, `Reprovar`, `Cancelar`.
+Use a convenção de CSS variables do shadcn/ui (HSL) e consuma via Tailwind (`bg-primary`, `text-muted-foreground`, `border-border`, etc.). Ajuste os valores no `globals.css`/tema; **não** chumbe cores hex soltas nos componentes.
 
-## Cores
+```css
+:root {
+  /* Neutros (cinza levemente frio) */
+  --background: 0 0% 100%;
+  --foreground: 222 22% 11%;        /* texto principal */
+  --muted: 210 20% 97%;             /* fundos sutis / zebra */
+  --muted-foreground: 215 16% 47%;  /* texto secundário, labels */
+  --border: 214 20% 90%;            /* bordas hairline */
+  --input: 214 20% 90%;
+  --ring: 142 60% 36%;              /* anel de foco (verde) */
 
-### Paleta Principal
+  /* Primária — verde institucional Autoriza Poda */
+  --primary: 142 71% 29%;           /* ~#15803d botões primários */
+  --primary-foreground: 0 0% 100%;
+  --primary-soft: 142 52% 94%;      /* fundo do badge/logo verde claro */
+
+  /* Superfícies */
+  --card: 0 0% 100%;
+  --card-foreground: 222 22% 11%;
+  --popover: 0 0% 100%;
+
+  /* Semânticas (dessaturadas, modernas) */
+  --success: 142 71% 29%;
+  --success-soft: 142 52% 94%;
+  --warning: 35 92% 45%;
+  --warning-soft: 40 96% 94%;
+  --destructive: 0 72% 45%;
+  --destructive-soft: 0 86% 97%;
+  --info: 214 80% 48%;
+  --info-soft: 214 95% 96%;
 
-- Verde institucional: `#166534`
-- Verde escuro para textos e destaques: `#14532d`
-- Verde claro para superficies suaves: `#dcfce7`
-- Fundo geral: `#f6f8f5`
-- Superficie principal: `#ffffff`
-- Borda neutra: `#d8e1d5`
-- Texto principal: `#17231d`
-- Texto secundario: `#647169`
+  --radius: 0.5rem; /* 8px base */
+}
+```
 
-### Cores de Apoio
+### Raio
+- Base `--radius` = 8px. Inputs/botões: 8px. Cards/modais: 12px (`rounded-xl`). Badges: full (`rounded-full`).
 
-- Azul informativo: `#1d4ed8`
-- Amarelo de andamento: `#92400e`
-- Vermelho de erro/reprovacao: `#991b1b`
-- Cinza de estado neutro/cancelado: `#374151`
+### Sombra
+- Cards: `shadow-sm` (sutil). Modais/popovers: `shadow-lg`. Nada além disso em uso comum.
 
-### Uso das Cores
+### Espaçamento
+- Escala Tailwind padrão (múltiplos de 4px). Padding interno de card: `p-6`. Gaps de formulário: `gap-4`. **Tabela é exceção** (densa, ver §5).
 
-- Verde deve indicar identidade, acoes primarias e estados positivos.
-- Azul deve indicar estado inicial ou informativo.
-- Amarelo deve indicar andamento, analise ou vistoria pendente.
-- Vermelho deve indicar erro, reprovar, bloquear ou acao destrutiva.
-- Cinza deve indicar estado neutro, cancelado ou inativo.
-- Nao usar muitas variacoes de uma mesma cor em uma tela.
-- Nao usar contraste baixo entre texto e fundo.
+---
 
-## Tipografia
+## 4. Tipografia
 
-- Fonte padrao: system UI (`Inter`, `Segoe UI`, `Roboto`, `Arial`, sans-serif).
-- Tamanho base: `16px`.
-- Texto comum: peso `400`.
-- Rotulos e acoes: peso `700` ou `800`.
-- Titulos de pagina: entre `24px` e `32px`.
-- Titulos de secao: entre `17px` e `20px`.
-- Textos auxiliares: entre `12px` e `14px`.
-- Nao usar letter-spacing negativo.
-- Nao escalar fonte com largura da viewport.
+Fonte única: **Inter**. Texto base **14px** (`text-sm`) — padrão de app administrativo (Linear/Vercel). Pesos com restrição:
 
-## Espacamentos
-
-Tokens recomendados:
-
-- `4px`: ajuste fino.
-- `8px`: distancia entre itens pequenos.
-- `12px`: padding interno compacto.
-- `16px`: espacamento padrao entre campos e blocos.
-- `24px`: separacao entre secoes.
-- `28px` ou `32px`: padding de tela em desktop.
-
-Regras:
-
-- Formularios devem ter espacamento suficiente entre campos.
-- Listas densas podem usar `8px` a `12px`.
-- Paineis principais devem usar padding entre `20px` e `32px`.
-- Evitar grandes vazios em telas operacionais.
-
-## Layout Global
-
-Estrutura recomendada para usuario autenticado:
-
-- Header fixo ou persistente no topo.
-- Menu ou abas de navegacao logo abaixo do header.
-- Conteudo principal em area ampla.
-- Layout de listagem com coluna lateral e painel de detalhe quando fizer sentido.
-
-Regras:
-
-- O conteudo principal deve ocupar a maior parte da viewport.
-- Elementos de navegacao devem ser previsiveis e consistentes.
-- Evitar cards aninhados dentro de cards.
-- Secoes de pagina devem ser bandas ou paineis simples, nao composicoes decorativas.
-
-## Header
-
-O header deve conter:
-
-- Nome do sistema: `Autoriza Poda`.
-- Identificacao do perfil ou area atual.
-- Nome do usuario autenticado.
-- Acao de sair.
-
-Padroes:
-
-- Altura entre `64px` e `76px`.
-- Fundo branco.
-- Borda inferior discreta.
-- Logo ou icone pequeno a esquerda.
-- Botao de sair como icone com tooltip ou titulo acessivel.
-
-## Menu
-
-O menu pode ser em abas horizontais ou navegacao lateral, conforme complexidade.
-
-Itens esperados:
-
-- Solicitacoes.
-- Nova solicitacao, para solicitante.
-- Usuarios, para administrador.
-- Perfil, quando implementado.
-
-Regras:
-
-- Mostrar apenas itens permitidos ao perfil.
-- O item ativo deve ter destaque claro.
-- O menu nao deve ser usado para burlar permissao; o backend deve validar tudo.
-- Em mobile, permitir quebra de linha ou menu compacto sem sobrepor conteudo.
-
-## Cards e Paineis
-
-Uso recomendado:
-
-- Resumos de solicitacao.
-- Blocos de informacao em detalhes.
-- Itens de listagem.
-- Paineis de acao, como encaminhamento e vistoria.
-
-Padroes:
-
-- Raio: `6px` a `8px`.
-- Borda: `1px solid #d8e1d5`.
-- Fundo: `#ffffff`.
-- Sombra: opcional e discreta.
-- Padding: `12px` a `16px`.
-
-Evitar:
-
-- Cards dentro de cards.
-- Cards com excesso de sombra.
-- Cards meramente decorativos.
-
-## Botoes
-
-### Primario
-
-Uso:
-
-- Entrar.
-- Cadastrar.
-- Salvar.
-- Encaminhar.
-- Registrar vistoria.
-
-Estilo:
-
-- Fundo verde `#166534`.
-- Texto branco.
-- Borda verde.
-- Altura minima `40px`.
-- Icone opcional a esquerda.
-
-### Secundario
-
-Uso:
-
-- Atualizar.
-- Voltar.
-- Filtrar.
-- Acoes auxiliares.
-
-Estilo:
-
-- Fundo branco.
-- Borda neutra.
-- Texto verde escuro ou texto principal.
-
-### Perigoso
-
-Uso:
-
-- Reprovar.
-- Cancelar.
-- Inativar usuario.
-
-Estilo:
-
-- Fundo vermelho ou borda vermelha conforme gravidade.
-- Texto claro quando fundo vermelho.
-
-Regras:
-
-- Botao deve ter texto claro de acao.
-- Usar icones da biblioteca adotada quando fizer sentido.
-- Estados `hover`, `focus`, `disabled` e `loading` devem ser visiveis.
-- Nao usar apenas cor para indicar significado.
-
-## Formularios
-
-Padroes:
-
-- Labels sempre visiveis em campos importantes.
-- Campos obrigatorios devem ser indicados por texto ou padrao visual claro.
-- Inputs com altura minima `40px`.
-- Textareas redimensionaveis verticalmente.
-- Mensagens de erro proximas ao campo quando possivel.
-- Agrupar campos relacionados.
-- Usar `select` para opcoes fechadas, como perfil, status ou resultado.
-- Usar upload com area clara para anexos.
-
-Regras:
-
-- Validar no frontend para ajudar o usuario.
-- Validar no backend como fonte de verdade.
-- Nao limpar formulario apos erro.
-- Apos sucesso, informar resultado e atualizar listagens.
-
-## Tabelas e Listagens
-
-Uso:
-
-- Listagem de solicitacoes.
-- Listagem de usuarios.
-- Historico de eventos.
-
-Padroes:
-
-- Cabecalho claro em tabelas.
-- Linhas com separacao por borda suave.
-- Status visivel em badge.
-- Data formatada em padrao brasileiro.
-- Texto longo deve quebrar sem estourar layout.
-- Acoes por linha devem ficar no final.
-
-Listas de solicitacao:
-
-- Exibir numero da solicitacao.
-- Exibir status.
-- Exibir endereco.
-- Exibir solicitante, quando o perfil puder ver.
-- Exibir data de abertura.
-
-## Badges de Status
-
-Padroes por status:
-
-- `ABERTA`: azul claro, texto azul.
-- `EM_ANALISE`: amarelo claro, texto marrom/amarelo escuro.
-- `ENCAMINHADA_FISCAL`: amarelo claro, texto marrom/amarelo escuro.
-- `EM_VISTORIA`: amarelo claro, texto marrom/amarelo escuro.
-- `APROVADA`: verde claro, texto verde.
-- `REPROVADA`: vermelho claro, texto vermelho.
-- `CANCELADA`: cinza claro, texto cinza.
-
-Regras:
-
-- Badge deve ter texto, nao apenas cor.
-- Usar nomes amigaveis: `Aberta`, `Em analise`, `Encaminhada`, `Em vistoria`, `Aprovada`, `Reprovada`, `Cancelada`.
-- Manter tamanho compacto e legivel.
-
-## Modais
-
-Usar modais para:
-
-- Confirmar acoes importantes.
-- Editar informacao curta sem sair da tela.
-- Exibir detalhes complementares.
-
-Regras:
-
-- Modal deve ter titulo claro.
-- Deve possuir botao de fechar.
-- Deve fechar com `Esc`.
-- Foco deve ficar preso dentro do modal enquanto aberto.
-- Acao primaria deve ficar clara.
-- Acao destrutiva deve exigir confirmacao.
-- Evitar modais grandes para formularios complexos; nesses casos, usar pagina ou painel dedicado.
-
-## Mensagens
-
-### Sucesso
-
-- Fundo verde claro.
-- Texto verde escuro.
-- Mensagem objetiva: `Solicitacao cadastrada.`, `Usuario atualizado.`
-
-### Erro
-
-- Fundo vermelho claro.
-- Texto vermelho escuro.
-- Mensagem deve explicar o problema sem termos tecnicos desnecessarios.
-
-### Alerta
-
-- Fundo amarelo claro.
-- Texto amarelo escuro.
-- Usar para pendencias, campos incompletos ou atencao operacional.
-
-Regras:
-
-- Mensagens devem aparecer perto da acao realizada ou no topo da area principal.
-- Nao deixar mensagens antigas confundindo o usuario.
-- Erros de permissao devem informar que a acao nao esta autorizada.
-
-## Responsividade
-
-Breakpoints recomendados:
-
-- Mobile: ate `640px`.
-- Tablet: ate `980px`.
-- Desktop: acima de `980px`.
-
-Regras:
-
-- Em mobile, layout de duas colunas deve virar uma coluna.
-- Listas podem aparecer antes do detalhe.
-- Botoes devem ter area de toque confortavel.
-- Tabelas devem virar lista, grid de linhas ou permitir rolagem controlada.
-- Texto nao deve sobrepor botoes ou outros elementos.
-- Inputs devem ocupar a largura disponivel.
-- Menu deve quebrar linha ou virar navegacao compacta.
-
-## Acessibilidade Basica
-
-- Toda imagem informativa deve ter `alt`.
-- Icones decorativos devem usar `aria-hidden`.
-- Botoes somente com icone devem ter `title` ou `aria-label`.
-- Formularios devem usar `label` associado ao campo.
-- Contraste deve ser suficiente para leitura.
-- Foco de teclado deve ser visivel.
-- Nao depender apenas de cor para transmitir status.
-- Modais devem gerenciar foco.
-- Mensagens de erro devem ser perceptiveis por leitores de tela quando possivel.
-
-## Tela de Login
-
-Padroes:
-
-- Tela simples e centralizada.
-- Nome do sistema visivel.
-- Campos: email e senha.
-- Link para cadastro de solicitante.
-- Link para recuperacao de senha.
-- Nao permitir escolha manual de perfil.
-- Botao principal: `Entrar`.
-- Mensagem clara para credenciais invalidas.
-
-Evitar:
-
-- Lista de perfis no login.
-- Login por botoes de perfil em producao.
-- Conteudo promocional excessivo.
-
-## Dashboard do Solicitante
-
-Deve priorizar:
-
-- Criar nova solicitacao.
-- Ver solicitacoes proprias.
-- Acompanhar status.
-- Acessar detalhes, historico e anexos.
-- Editar dados pessoais.
-
-Layout recomendado:
-
-- Lista de solicitacoes proprias.
-- Filtro por status.
-- Botao `Nova solicitacao`.
-- Painel de detalhes ao selecionar uma solicitacao.
-
-## Dashboard do Fiscal
-
-Deve priorizar:
-
-- Solicitacoes encaminhadas para o fiscal logado.
-- Status de vistoria.
-- Acesso rapido para registrar parecer tecnico.
-- Resultado tecnico: aprovar ou reprovar.
-
-Layout recomendado:
-
-- Lista de solicitacoes atribuidas.
-- Destaque para pendencias.
-- Painel de detalhe com endereco, motivo, anexos e historico.
-- Area de vistoria objetiva, com parecer e resultado.
-
-## Dashboard do Administrador
-
-Deve priorizar:
-
-- Visao completa das solicitacoes.
-- Filtros por status, fiscal e solicitante.
-- Encaminhamento para fiscal.
-- Gerenciamento de usuarios.
-- Acompanhamento do historico completo.
-
-Layout recomendado:
-
-- Lista geral com filtros.
-- Painel de detalhe.
-- Area de encaminhamento.
-- Aba ou tela de usuarios.
-- Indicadores simples de quantidade por status, quando util.
-
-## Cadastro, Edicao e Detalhe de Solicitacao
-
-Cadastro:
-
-- Campos de endereco agrupados.
-- Campo de motivo em destaque.
-- Observacao como texto livre.
-- Upload de anexos.
-- Botao principal `Cadastrar`.
-
-Edicao:
-
-- Mostrar status atual.
-- Indicar quando a edicao estiver bloqueada pelo status.
-- Preservar dados preenchidos ao ocorrer erro.
-- Registrar historico quando houver alteracao relevante.
-
-Detalhe:
-
-- Mostrar status no topo.
-- Mostrar numero da solicitacao.
-- Mostrar solicitante, fiscal, endereco, motivo e observacoes.
-- Mostrar anexos.
-- Mostrar historico em ordem cronologica.
-- Mostrar vistorias e pareceres quando existirem.
-
-## Edicao de Usuario e Perfil
-
-Perfil proprio:
-
-- Campos: nome, email, telefone, CPF quando aplicavel.
-- Troca de senha separada ou claramente identificada.
-- Botao principal `Salvar`.
-
-Gerenciamento pelo administrador:
-
-- Listagem de usuarios com nome, email, perfil e status.
-- Cadastro de usuario com perfil.
-- Edicao de usuario com ativar/inativar.
-- Evitar exclusao fisica; preferir inativacao.
-
-## O Que Deve Ser Evitado
-
-- Permitir escolha de perfil na tela de login.
-- Colocar regra de negocio sensivel no frontend.
-- Exibir dados que o perfil nao pode acessar.
-- Usar cores sem texto para indicar status.
-- Criar telas com visual de landing page.
-- Usar grandes imagens decorativas no fluxo operacional.
-- Usar gradientes fortes ou ornamentos que tirem foco do trabalho.
-- Misturar muitos estilos de botao.
-- Usar cards aninhados.
-- Criar formularios sem labels.
-- Criar tabelas que quebrem em mobile sem alternativa.
-- Esconder erros genericos sem orientar o usuario.
-- Usar termos tecnicos internos em mensagens para usuario final.
-- Alterar padroes visuais sem atualizar este documento.
-
-O sistema deve seguir padrões modernos de UI/UX inspirados em design systems consolidados de mercado, como Google Material Design, Microsoft Fluent Design, Apple Human Interface Guidelines, IBM Carbon Design System e Atlassian Design System.
-
-Não copiar identidade visual, marca, cores ou componentes proprietários dessas empresas, mas adotar os princípios de qualidade utilizados por sistemas profissionais:
-
-- consistência visual
-- clareza de navegação
-- hierarquia de informação
-- acessibilidade
-- responsividade
-- componentes reutilizáveis
-- feedback visual ao usuário
-- estados de interação
-- padronização de botões, cards, tabelas, formulários e badges
-- experiência simples, objetiva e profissional
+| Uso | Tamanho | Peso |
+|---|---|---|
+| Título de página / card | `text-xl`–`text-2xl` | `font-semibold` (600) |
+| Subtítulo / descrição | `text-sm` | `font-normal` (400), `text-muted-foreground` |
+| Eyebrow / label de seção | `text-xs` uppercase, `tracking-wide` | `font-medium` (500), `text-muted-foreground` |
+| Label de campo | `text-sm` | `font-medium` (500) |
+| **Valor de input / corpo** | `text-sm` | **`font-normal` (400)** |
+| Texto de botão | `text-sm` | `font-medium` (500) |
+| Dados de tabela | `text-sm` | `font-normal` (400) |
+
+**Regra dura:** valores digitados, conteúdo de células e texto corrido são **sempre 400**. Negrito só em título/label, nunca no conteúdo.
+
+---
+
+## 5. Componentes
+
+Prefira os componentes do **shadcn/ui** já instalados. Padronize cada um conforme abaixo.
+
+### Botões (`Button`)
+Variantes (intenção → estilo):
+- **primary** — ação principal. Verde sólido (`bg-primary text-primary-foreground`), `hover` levemente mais escuro.
+- **secondary / outline** — ação secundária (ex.: "Cancelar", "Voltar"). Fundo branco, borda `border-border`, texto `foreground`.
+- **ghost** — ação terciária / ícones de tabela. Sem fundo, `hover:bg-muted`.
+- **destructive** — excluir/desativar. `bg-destructive` ou outline vermelho.
+
+Regras: altura `h-9` (padrão) / `h-8` (compacto em tabela). Ícone (lucide) à esquerda do texto com `gap-2`, tamanho `h-4 w-4`. Estado **loading** com spinner e `disabled`. Sempre `focus-visible:ring-2 ring-ring`. Botão de ícone puro: quadrado (`h-8 w-8`), `aria-label` obrigatório.
+
+### Inputs (`Input`)
+- Altura `h-9`, `px-3`, `text-sm`, **`font-normal`**, `rounded-md`, `border-input`.
+- Foco: `focus-visible:ring-2 ring-ring ring-offset-0`, sem borda grossa.
+- Erro (com zod): borda `border-destructive` + mensagem `text-xs text-destructive` abaixo.
+- **Campo com ícone (busca):** ícone `absolute left-3` centralizado verticalmente (`h-4 w-4 text-muted-foreground`) e input com `pl-9`/`pl-10` para o placeholder **não** ficar sob o ícone.
+
+### Select (`Select` do shadcn — preferir ao `<select>` nativo)
+- Use o `Select` do shadcn para ter seta e padding consistentes. Se mantiver nativo, aplicar `appearance-none` + ícone `ChevronDown` (lucide) posicionado `right-3`, com `pr-9` no controle. Seta **centralizada e com respiro da borda**, igual em todos os filtros.
+
+### Textarea
+- Mesmo estilo do input, `min-h-[80px]`, `font-normal`, redimensionável vertical.
+
+### Tabela (`Table` / TanStack Table)
+- **Densidade compacta:** célula com `px-4 py-2.5` (linha ~44–48px). Nunca `py-5/py-6`.
+- Cabeçalho: `text-xs uppercase tracking-wide text-muted-foreground font-medium`, fundo `bg-muted/50`, borda inferior.
+- Linhas: borda inferior `border-border`, `hover:bg-muted/40`. Zebra é opcional e sutil.
+- Coluna **Ações** alinhada à direita, botões `ghost` `h-8 w-8` com ícone, `gap-1`.
+- Estado vazio: linha única centralizada com mensagem + ação (ver Empty state).
+
+### Dialog / Modal (`Dialog`)
+- Edições e formulários secundários (perfil, editar usuário/solicitação, selecionar fiscal) vão em **modal**, não em tela própria.
+- Largura conforme conteúdo (`sm:max-w-md` a `sm:max-w-2xl`), `rounded-xl`, `shadow-lg`, header com título `font-semibold` + descrição curta `text-muted-foreground`, footer com ações à direita (primária à direita, "Cancelar" à esquerda dela).
+- **Ao salvar com sucesso: fechar o modal, atualizar os dados e disparar toast.** Em erro, manter aberto e mostrar toast/erro de campo.
+
+### Toast (`sonner`)
+- `<Toaster />` montado **uma vez** na raiz, posição `top-right` (ou `bottom-right`), `richColors`.
+- `toast.success` (verde), `toast.error` (vermelho), `toast.info`, `toast.warning`. Texto curto e direto.
+- **Todo** retorno de ação (salvar, criar, encaminhar, excluir, atualizar) usa toast. Mensagens fixas no layout são proibidas (ver anti-padrões).
+
+### Badge de status (`Badge`)
+Pílula `rounded-full`, `text-xs`, `font-medium`, fundo *soft* + texto da cor semântica:
+
+| Status | Cor |
+|---|---|
+| Aberta | info (azul) |
+| Em análise | warning (âmbar) |
+| Encaminhada | warning/info |
+| Aprovada | success (verde) |
+| Reprovada | destructive (vermelho) |
+| Concluída | success/neutro |
+| Ativo / Inativo (usuário) | success / muted |
+
+### Card
+- `bg-card`, `border border-border`, `rounded-xl`, `shadow-sm`, `p-6`. Eyebrow opcional (`text-xs uppercase`), título `font-semibold`, descrição `text-muted-foreground`. **Sem título redundante.**
+
+### Estado vazio (Empty state)
+- Ícone leve (lucide), frase curta dizendo o que fazer e, quando aplicável, um botão de ação. Vazio é convite à ação, não espaço morto.
+
+### Loading
+- Botões: spinner + `disabled`. Listas/tabelas: **skeleton** com a forma do conteúdo (não um spinner solto no meio da tela).
+
+---
+
+## 6. Interação e escrita
+
+- **Vocabulário consistente:** o botão diz o que acontece e o toast confirma com a mesma palavra. "Salvar" → toast "Alterações salvas". "Encaminhar" → "Solicitação encaminhada".
+- **Voz ativa, sentence case.** "Salvar alterações", não "Submeter dados".
+- **Erros são direção, não desculpa.** Diga o que houve e como resolver, na voz do sistema. Mensagem de erro da API sempre via toast.
+- **Foco visível** em todo elemento interativo (`focus-visible:ring-2 ring-ring`). Navegação por teclado funciona em modais (fechar com Esc, foco preso no dialog).
+- **Movimento discreto:** transições curtas (`transition-colors`, ~150ms) em hover/focus. Respeitar `prefers-reduced-motion`. Sem animações chamativas.
+- **Responsivo:** funciona até mobile; tabelas com scroll horizontal quando necessário.
+
+---
+
+## 7. Checklist de revisão (antes de considerar uma tela pronta)
+
+- [ ] Valores de input em `font-normal` (sem negrito).
+- [ ] Nenhuma mensagem de status fixa — tudo em toast.
+- [ ] Campo de busca: ícone não cobre o placeholder.
+- [ ] Selects padronizados (seta alinhada, com respiro).
+- [ ] Tabela compacta (linha ~44–48px).
+- [ ] Edição em modal, com fechamento + toast no sucesso.
+- [ ] Sem títulos redundantes.
+- [ ] Cada ação/ícone com função única.
+- [ ] Cores via tokens (sem hex solto), sombras/bordas sutis.
+- [ ] Foco visível e navegação por teclado nos modais.

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { AxiosError } from 'axios'
+import { toast } from 'sonner'
 import {
   Leaf,
   Mail,
@@ -25,10 +26,11 @@ import {
 } from './components/UserUI'
 import {
   Button,
-  Feedback,
   Field,
   Modal,
 } from './components/ui'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Toaster } from '@/components/ui/sonner'
 import { dashboardLabel } from './utils/formatters'
 import type {
   AuthUser,
@@ -41,7 +43,6 @@ import type {
 import './App.css'
 
 type AuthMode = 'login' | 'register' | 'forgot'
-type FeedbackState = { type: 'success' | 'error' | 'warning'; text: string } | null
 
 type LoginResponse = {
   token: string
@@ -86,7 +87,8 @@ function App() {
   const [usuarioPerfilFilter, setUsuarioPerfilFilter] = useState<UsuarioPerfilFilter>('TODOS')
   const [usuarioStatusFilter, setUsuarioStatusFilter] = useState<UsuarioStatusFilter>('TODOS')
   const [loading, setLoading] = useState(false)
-  const [feedback, setFeedback] = useState<FeedbackState>(null)
+  const [profileOpen, setProfileOpen] = useState(false)
+  const [securityOpen, setSecurityOpen] = useState(false)
   const [editingSolicitacao, setEditingSolicitacao] = useState<Solicitacao | null>(null)
   const [creatingSolicitacao, setCreatingSolicitacao] = useState(false)
   const [creatingUser, setCreatingUser] = useState(false)
@@ -160,12 +162,17 @@ function App() {
   const isSelectedFinal = selectedSolicitacao
     ? finalStatuses.includes(selectedSolicitacao.status)
     : false
-  const canEditSelected =
-    Boolean(selectedSolicitacao) &&
-    !isSelectedFinal &&
-    (user?.perfil === 'ADMINISTRADOR' ||
-      (user?.perfil === 'SOLICITANTE' &&
-        ['ABERTA', 'EM_ANALISE'].includes(selectedSolicitacao!.status)))
+
+  const canEditSolicitacao = useCallback((solicitacao: Solicitacao): boolean => {
+    if (finalStatuses.includes(solicitacao.status)) return false
+    if (user?.perfil === 'ADMINISTRADOR') return true
+    if (user?.perfil === 'SOLICITANTE') {
+      return ['ABERTA', 'EM_ANALISE', 'ENCAMINHADA_FISCAL'].includes(solicitacao.status)
+    }
+    return false
+  }, [user])
+
+  const canEditSelected = Boolean(selectedSolicitacao) && canEditSolicitacao(selectedSolicitacao!)
 
   const loadMe = useCallback(async () => {
     const token = getStoredToken()
@@ -244,12 +251,11 @@ function App() {
     }
 
     setLoading(true)
-    setFeedback(null)
 
     try {
       await Promise.all([loadSolicitacoes(), loadAdminData()])
     } catch (refreshError) {
-      setFeedback({ type: 'error', text: getErrorMessage(refreshError) })
+      toast.error(getErrorMessage(refreshError))
     } finally {
       setLoading(false)
     }
@@ -278,10 +284,9 @@ function App() {
         return
       }
 
-      setFeedback(null)
       loadDetails(selectedId).catch((detailsError: unknown) => {
         setDetails(null)
-        setFeedback({ type: 'error', text: getErrorMessage(detailsError) })
+        toast.error(getErrorMessage(detailsError))
       })
     }, 0)
 
@@ -291,7 +296,6 @@ function App() {
   const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setLoading(true)
-    setFeedback(null)
 
     const formData = new FormData(event.currentTarget)
     const email = String(formData.get('email') || '')
@@ -312,9 +316,9 @@ function App() {
       setStoredToken(data.token)
       setUser(data.user)
       setView('solicitacoes')
-      setFeedback({ type: 'success', text: `Login realizado como ${data.user.nome}.` })
+      toast.success(`Login realizado como ${data.user.nome}.`)
     } catch (loginError) {
-      setFeedback({ type: 'error', text: getErrorMessage(loginError) })
+      toast.error(getErrorMessage(loginError))
     } finally {
       setLoading(false)
     }
@@ -322,18 +326,12 @@ function App() {
 
   const handleRegisterSolicitante = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    setFeedback({
-      type: 'warning',
-      text: 'A tela de cadastro está pronta, mas o endpoint público de cadastro de solicitante ainda precisa ser implementado no backend.',
-    })
+    toast.warning('A tela de cadastro está pronta, mas o endpoint público de cadastro de solicitante ainda precisa ser implementado no backend.')
   }
 
   const handleForgotPassword = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    setFeedback({
-      type: 'warning',
-      text: 'A tela de recuperação está pronta, mas os endpoints de recuperação de senha ainda precisam ser implementados no backend.',
-    })
+    toast.warning('A tela de recuperação está pronta, mas os endpoints de recuperação de senha ainda precisam ser implementados no backend.')
   }
 
   const handleLogout = () => {
@@ -343,27 +341,25 @@ function App() {
     setDetails(null)
     setSelectedId(null)
     setView('solicitacoes')
-    setFeedback(null)
   }
 
   const handleCreateSolicitacao = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setLoading(true)
-    setFeedback(null)
 
     const form = event.currentTarget
     const formData = new FormData(form)
 
     try {
       const { data } = await api.post<SolicitacaoDetails>('/api/solicitacoes', formData)
-      setFeedback({ type: 'success', text: 'Solicitação salva.' })
+      toast.success('Solicitação salva.')
       form.reset()
       setCreatingSolicitacao(false)
       await loadSolicitacoes()
       setSelectedId(data.solicitacao.id_solicitacao)
       setDetails(data)
     } catch (createError) {
-      setFeedback({ type: 'error', text: getErrorMessage(createError) })
+      toast.error(getErrorMessage(createError))
     } finally {
       setLoading(false)
     }
@@ -377,7 +373,6 @@ function App() {
     }
 
     setLoading(true)
-    setFeedback(null)
 
     const formData = new FormData(event.currentTarget)
 
@@ -398,9 +393,9 @@ function App() {
       if (selectedId) {
         await loadDetails(selectedId)
       }
-      setFeedback({ type: 'success', text: 'Solicitação atualizada.' })
+      toast.success('Solicitação atualizada.')
     } catch (editError) {
-      setFeedback({ type: 'error', text: getErrorMessage(editError) })
+      toast.error(getErrorMessage(editError))
     } finally {
       setLoading(false)
     }
@@ -414,7 +409,6 @@ function App() {
     }
 
     setLoading(true)
-    setFeedback(null)
 
     const formData = new FormData(event.currentTarget)
 
@@ -429,9 +423,9 @@ function App() {
 
       setDetails(data)
       await loadSolicitacoes()
-      setFeedback({ type: 'success', text: 'Solicitação encaminhada para o fiscal.' })
+      toast.success('Solicitação encaminhada para o fiscal.')
     } catch (forwardError) {
-      setFeedback({ type: 'error', text: getErrorMessage(forwardError) })
+      toast.error(getErrorMessage(forwardError))
     } finally {
       setLoading(false)
     }
@@ -443,7 +437,6 @@ function App() {
     form: HTMLFormElement,
   ) => {
     setLoading(true)
-    setFeedback(null)
 
     try {
       const { data } = await api.post<SolicitacaoDetails>(
@@ -454,9 +447,9 @@ function App() {
       setDetails(data)
       form.reset()
       await loadSolicitacoes()
-      setFeedback({ type: 'success', text: 'Vistoria registrada.' })
+      toast.success('Vistoria registrada.')
     } catch (vistoriaError) {
-      setFeedback({ type: 'error', text: getErrorMessage(vistoriaError) })
+      toast.error(getErrorMessage(vistoriaError))
     } finally {
       setLoading(false)
     }
@@ -493,7 +486,6 @@ function App() {
   const handleCreateUser = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setLoading(true)
-    setFeedback(null)
 
     const form = event.currentTarget
     const formData = new FormData(form)
@@ -511,9 +503,9 @@ function App() {
       form.reset()
       setCreatingUser(false)
       await loadAdminData()
-      setFeedback({ type: 'success', text: 'Usuário cadastrado.' })
+      toast.success('Usuário cadastrado.')
     } catch (userError) {
-      setFeedback({ type: 'error', text: getErrorMessage(userError) })
+      toast.error(getErrorMessage(userError))
     } finally {
       setLoading(false)
     }
@@ -527,7 +519,6 @@ function App() {
     }
 
     setLoading(true)
-    setFeedback(null)
 
     const formData = new FormData(event.currentTarget)
 
@@ -544,9 +535,9 @@ function App() {
 
       setEditingUser(null)
       await loadAdminData()
-      setFeedback({ type: 'success', text: 'Usuário atualizado.' })
+      toast.success('Usuário atualizado.')
     } catch (editError) {
-      setFeedback({ type: 'error', text: getErrorMessage(editError) })
+      toast.error(getErrorMessage(editError))
     } finally {
       setLoading(false)
     }
@@ -567,7 +558,6 @@ function App() {
 
   const handleToggleUser = async (usuario: Usuario) => {
     setLoading(true)
-    setFeedback(null)
 
     try {
       await api.put(`/api/usuarios/${usuario.id_usuario}`, {
@@ -581,9 +571,9 @@ function App() {
       })
 
       await loadAdminData()
-      setFeedback({ type: 'success', text: 'Usuário atualizado.' })
+      toast.success('Usuário atualizado.')
     } catch (toggleError) {
-      setFeedback({ type: 'error', text: getErrorMessage(toggleError) })
+      toast.error(getErrorMessage(toggleError))
     } finally {
       setLoading(false)
     }
@@ -591,18 +581,12 @@ function App() {
 
   const handleProfileUpdate = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    setFeedback({
-      type: 'warning',
-      text: 'A tela de perfil está pronta, mas o endpoint de edição do próprio perfil ainda precisa ser implementado no backend.',
-    })
+    toast.warning('A tela de perfil está pronta, mas o endpoint de edição do próprio perfil ainda precisa ser implementado no backend.')
   }
 
   const handlePasswordUpdate = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    setFeedback({
-      type: 'warning',
-      text: 'A tela de alteração de senha está pronta, mas o endpoint de senha ainda precisa ser implementado no backend.',
-    })
+    toast.warning('A tela de alteração de senha está pronta, mas o endpoint de senha ainda precisa ser implementado no backend.')
   }
 
   const confirmCurrentAction = async () => {
@@ -626,6 +610,8 @@ function App() {
 
   if (!user) {
     return (
+      <>
+      <Toaster richColors position="top-right" />
       <main className="login-shell">
         <section className="login-panel" aria-labelledby="auth-title">
           <div className="brand-mark brand-mark-large">
@@ -719,24 +705,34 @@ function App() {
             </form>
           ) : null}
 
-          {feedback ? <Feedback type={feedback.type}>{feedback.text}</Feedback> : null}
         </section>
       </main>
+      </>
     )
   }
 
+  const handleNavigate = (key: AppViewKey) => {
+    if (key === 'perfil') {
+      setProfileOpen(true)
+    } else if (key === 'seguranca') {
+      setSecurityOpen(true)
+    } else {
+      setView(key)
+    }
+  }
+
   return (
+    <>
+    <Toaster richColors position="top-right" />
     <AppShell
       user={user}
       activeView={view}
       canManageUsers={canManageUsers}
       loading={loading}
-      onNavigate={setView}
+      onNavigate={handleNavigate}
       onRefresh={refreshAll}
       onLogout={handleLogout}
     >
-
-      {feedback ? <Feedback type={feedback.type}>{feedback.text}</Feedback> : null}
 
       {view === 'solicitacoes' ? (
         <section className="page-surface">
@@ -749,10 +745,12 @@ function App() {
             statusFilter={statusFilter}
             selectedId={selectedId}
             canCreateSolicitacao={canCreateSolicitacao}
+            canEditSolicitacao={canEditSolicitacao}
             onSearchChange={setSolicitacaoSearch}
             onStatusFilterChange={setStatusFilter}
             onCreateClick={() => setCreatingSolicitacao(true)}
             onOpenDetails={(solicitacao) => setSelectedId(solicitacao.id_solicitacao)}
+            onEditSolicitacao={setEditingSolicitacao}
           />
         </section>
       ) : null}
@@ -777,24 +775,6 @@ function App() {
         </section>
       ) : null}
 
-      {view === 'perfil' ? (
-        <section className="page-surface">
-          <ProfileAccountView
-            user={user}
-            onBack={() => setView('solicitacoes')}
-            onSubmit={handleProfileUpdate}
-          />
-        </section>
-      ) : null}
-
-      {view === 'seguranca' ? (
-        <section className="page-surface">
-          <SecurityView
-            onBack={() => setView('solicitacoes')}
-            onSubmit={handlePasswordUpdate}
-          />
-        </section>
-      ) : null}
 
       <CreateSolicitacaoModal
         open={creatingSolicitacao}
@@ -870,6 +850,27 @@ function App() {
         }
       />
     </AppShell>
+
+    <Dialog open={profileOpen} onOpenChange={(open) => { if (!open) setProfileOpen(false) }}>
+      <DialogContent className="sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Meu perfil</DialogTitle>
+          <DialogDescription>Dados básicos da conta autenticada.</DialogDescription>
+        </DialogHeader>
+        <ProfileAccountView user={user} onSubmit={handleProfileUpdate} />
+      </DialogContent>
+    </Dialog>
+
+    <Dialog open={securityOpen} onOpenChange={(open) => { if (!open) setSecurityOpen(false) }}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Segurança</DialogTitle>
+          <DialogDescription>Altere sua senha de acesso ao sistema.</DialogDescription>
+        </DialogHeader>
+        <SecurityView onSubmit={handlePasswordUpdate} />
+      </DialogContent>
+    </Dialog>
+    </>
   )
 }
 

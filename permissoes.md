@@ -88,11 +88,14 @@ Pode:
 - Ver detalhes, anexos e historico completo.
 - Encaminhar solicitacoes para fiscais.
 - Gerenciar usuarios.
-- Editar solicitacoes quando necessario.
 - Alterar status conforme regra operacional.
 - Ativar e inativar usuarios.
 - Acompanhar auditoria do processo.
-- Solicitar recuperacao de senha.
+- Solicitar recuperacao de sua senha.
+- Cadastrar um novo usuario.
+
+Nao pode 
+- Alterar perfil de usuario.
 
 Deve:
 
@@ -105,7 +108,7 @@ Deve:
 | Funcionalidade | Solicitante | Fiscal | Administrador |
 | --- | --- | --- | --- |
 | Login | Sim | Sim | Sim |
-| Cadastro de solicitante | Sim | Nao | Sim |
+| Cadastro de solicitante | Sim | Nao |Sim |
 | Recuperacao de senha | Sim | Sim | Sim |
 | Editar proprio perfil | Sim | Sim | Sim |
 | Gerenciar usuarios | Nao | Nao | Sim |

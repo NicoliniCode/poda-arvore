@@ -14,13 +14,13 @@ O perfil do usuario deve ser carregado do banco de dados apos login. A tela de l
 
 ## Fluxo Principal da Solicitacao
 
-1. O solicitante realiza login ou cadastro.
+1. O solicitante realiza login ou sign up.
 2. O solicitante cadastra uma solicitacao de poda.
 3. A solicitacao inicia com status `ABERTA`.
 4. O administrador visualiza a solicitacao.
-5. O administrador pode iniciar analise e encaminhar para um fiscal.
+5. O administrador pode iniciar analise e para qual fiscal deseja encaminhar a solicitacao.
 6. Ao encaminhar, a solicitacao passa para `ENCAMINHADA_FISCAL`.
-7. O fiscal responsavel visualiza a solicitacao.
+7. O fiscal selecionado visualiza a solicitacao.
 8. O fiscal registra vistoria com parecer tecnico.
 9. O fiscal aprova ou reprova tecnicamente a solicitacao.
 10. A solicitacao passa para `APROVADA` ou `REPROVADA`.
@@ -62,6 +62,7 @@ O fiscal nao pode:
 - Gerenciar usuarios.
 - Encaminhar solicitacoes.
 - Alterar dados de solicitacoes que nao estejam sob sua responsabilidade.
+- alterar dados pessoais de solicitantes.
 
 ## Regras do Administrador
 
@@ -69,11 +70,13 @@ O administrador pode:
 
 - Visualizar todas as solicitacoes.
 - Visualizar detalhes, anexos e historico completo.
-- Gerenciar usuarios.
+- Gerenciar usuarios fiscais.
 - Encaminhar solicitacoes para fiscais.
-- Editar solicitacoes quando necessario.
 - Alterar status conforme necessidade operacional.
 - Acompanhar auditoria e historico.
+
+O administrador nao pode:
+- alterar dados pessoais de solicitantes.
 
 O administrador deve:
 
@@ -85,17 +88,14 @@ O administrador deve:
 
 Edicao pelo solicitante:
 
-- Permitida quando a solicitacao estiver `ABERTA`.
+- Permitida quando a solicitacao estiver `ABERTA`, `ENCAMINHADA`.
 - Pode ser permitida em `EM_ANALISE` se a regra operacional exigir complementacao.
 - Nao deve ser permitida quando estiver `ENCAMINHADA_FISCAL`, `EM_VISTORIA`, `APROVADA`, `REPROVADA` ou `CANCELADA`, exceto por acao administrativa.
 
 Edicao pelo administrador:
-
-- Permitida quando necessaria para correcao, complementacao ou adequacao do processo.
 - Deve registrar historico quando alterar informacao relevante.
 
 Edicao pelo fiscal:
-
 - Restrita ao registro de vistoria, parecer tecnico e resultado.
 - Nao deve permitir troca de solicitante ou alteracao de dados administrativos.
 
